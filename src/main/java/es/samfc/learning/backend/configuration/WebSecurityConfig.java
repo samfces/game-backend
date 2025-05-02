@@ -1,8 +1,10 @@
 package es.samfc.learning.backend.configuration;
 
+import es.samfc.learning.backend.security.encryption.Encoders;
+import es.samfc.learning.backend.security.handling.CustomAccessDeniedHandler;
+import es.samfc.learning.backend.security.jwt.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -14,9 +16,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import es.samfc.learning.backend.security.encryption.Encoders;
-import es.samfc.learning.backend.security.handling.CustomAccessDeniedHandler;
-import es.samfc.learning.backend.security.jwt.JwtRequestFilter;
 
 /**
  * Configuración de seguridad
@@ -31,6 +30,16 @@ public class WebSecurityConfig {
     private final JwtRequestFilter jwtRequestFilter;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
+    private static final String[] WHITELIST = {
+            // Authentication
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+
+            // Swagger UI v3 (OpenAPI)
+            "/v3/api-docs/**",
+            "/swagger-ui/**"
+    };
+
     public WebSecurityConfig(JwtRequestFilter jwtRequestFilter,
                              CustomAccessDeniedHandler accessDeniedHandler
     ) {
@@ -43,7 +52,7 @@ public class WebSecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(config -> config
-                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                    .requestMatchers(WHITELIST).permitAll()
                     .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception
