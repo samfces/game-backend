@@ -7,8 +7,8 @@ import java.util.Map;
 
 public class MessageResponse {
 
-    private int status;
-    private Map<String, Object> payload;
+    private final int status;
+    private final Map<String, Object> payload;
 
     private MessageResponse(int status, Map<String, Object> payload) {
         this.status = status;
@@ -26,7 +26,7 @@ public class MessageResponse {
     public static class Builder {
 
         private HttpStatus status;
-        private Map<String, Object> payload = new HashMap<>();
+        private final Map<String, Object> payload = new HashMap<>();
 
         public Builder status(HttpStatus status) {
             this.status = status;

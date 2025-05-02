@@ -8,6 +8,10 @@ public class EconomyDeleteRequest {
         //Empty constructor for Jackson
     }
 
+    public EconomyDeleteRequest(Integer id) {
+        this.id = id;
+    }
+
     public Integer getId() {
         return id;
     }

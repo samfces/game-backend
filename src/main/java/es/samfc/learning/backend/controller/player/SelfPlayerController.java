@@ -1,5 +1,6 @@
 package es.samfc.learning.backend.controller.player;
 
+import es.samfc.learning.backend.services.impl.PlayerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +20,15 @@ import java.util.Map;
 @RestController
 public class SelfPlayerController extends AuthenticatedController {
 
-    private Logger logger = LoggerFactory.getLogger(SelfPlayerController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlayerController.class);
+
+    public SelfPlayerController(PlayerService playerService) {
+        super(playerService);
+    }
 
     @GetMapping("/api/v1/self/me")
     public ResponseEntity<MessageResponse> me(HttpServletRequest request) {
-        ControllerUtils.logRequest(logger, request);
+        ControllerUtils.logRequest(LOGGER, request);
         if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
 
         Player player = getPlayerService().getPlayer(SecurityContextHolder.getContext().getAuthentication().getName());

@@ -59,7 +59,7 @@ public class EconomyValue {
 
     public static class Builder {
 
-        private EconomyValue building = new EconomyValue();
+        private final EconomyValue building = new EconomyValue();
 
         public Builder setValue(Double value) {
             building.value = value;

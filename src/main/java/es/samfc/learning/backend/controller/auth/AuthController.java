@@ -39,7 +39,7 @@ import java.util.Optional;
 @RestController
 public class AuthController {
 
-    private Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
     private final Encoders encoders;
     private final UserDetailsServiceImpl userDetailsService;
@@ -76,7 +76,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/login")
     public ResponseEntity<MessageResponse> login(@RequestBody LoginRequest login) {
-        logger.info("POST /api/v1/auth/login");
+        LOGGER.info("POST /api/v1/auth/login");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
         );
@@ -107,7 +107,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/refresh")
     public ResponseEntity<MessageResponse> refresh(@RequestBody RefreshRequest refresh) {
-        logger.info("POST /api/v1/auth/refresh");
+        LOGGER.info("POST /api/v1/auth/refresh");
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
         if (refreshTokenOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -152,20 +152,17 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/logout")
     public ResponseEntity<MessageResponse> logout() {
-        logger.info("POST /api/v1/auth/logout");
+        LOGGER.info("POST /api/v1/auth/logout");
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        RefreshToken refreshToken = refreshTokenRepository.findByUsername(userDetails.getUsername()).orElse(null);
-        if (refreshToken != null) {
-            refreshTokenRepository.delete(refreshToken);
-        }
+        refreshTokenRepository.findByUsername(userDetails.getUsername()).ifPresent(refreshTokenRepository::delete);
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/logout")
                 .payload("message", "Sesión cerrada correctamente")
                 .payload("data", Map.of(
-                    "token", null,
-                    "refreshToken", null
+                    "token", "",
+                    "refreshToken", ""
                 ))
                 .build()
         );
@@ -173,7 +170,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/register")
     public ResponseEntity<MessageResponse> register(@RequestBody RegisterRequest register) {
-        logger.info("POST /api/v1/auth/register");
+        LOGGER.info("POST /api/v1/auth/register");
 
         if (playerRepository.existsByName(register.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -206,7 +203,7 @@ public class AuthController {
 
     @PostMapping("/api/v1/auth/password/change")
     public ResponseEntity<MessageResponse> changePassword(@RequestBody PasswordChangeRequest passwordChange) {
-        logger.info("POST /api/v1/auth/password/change");
+        LOGGER.info("POST /api/v1/auth/password/change");
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
@@ -231,7 +228,7 @@ public class AuthController {
         }
 
         int passwordStrength = PasswordChecker.getPasswordStrength(passwordChange.getNewPassword());
-        logger.info("Password strength: {}", passwordStrength);
+        LOGGER.info("Password strength: {}", passwordStrength);
         if (passwordStrength < passwordMinStrength) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     new MessageResponse.Builder()
@@ -249,10 +246,7 @@ public class AuthController {
         credentials.setPassword(encodedPassword);
         credentialsRepository.save(credentials);
 
-        RefreshToken refreshToken = refreshTokenRepository.findByUsername(userDetails.getUsername()).orElse(null);
-        if (refreshToken != null) {
-            refreshTokenRepository.delete(refreshToken);
-        }
+        refreshTokenRepository.findByUsername(userDetails.getUsername()).ifPresent(refreshTokenRepository::delete);
 
         return ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)

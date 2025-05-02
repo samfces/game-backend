@@ -1,5 +1,6 @@
 package es.samfc.learning.backend.controller.economy;
 
+import es.samfc.learning.backend.services.impl.PlayerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +23,17 @@ import java.util.Optional;
 @RestController
 public class EconomyController extends AuthenticatedController {
 
-    private EconomiesService economiesService;
-    private Logger logger = LoggerFactory.getLogger(EconomyController.class);
+    private final EconomiesService economiesService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(EconomyController.class);
 
-    public EconomyController(EconomiesService economiesService) {
+    public EconomyController(EconomiesService economiesService, PlayerService playerService) {
+        super(playerService);
         this.economiesService = economiesService;
     }
 
     @PostMapping("/api/v1/economy/create")
     public ResponseEntity<MessageResponse> create(@RequestBody EconomyType economyType, HttpServletRequest request) {
-        ControllerUtils.logRequest(logger, request);
+        ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
         Optional<Player> optionalPlayer = getPlayerFromContext();
@@ -68,9 +70,9 @@ public class EconomyController extends AuthenticatedController {
         economiesService.saveEconomyType(economyType);
 
         new Thread(() -> {
-            logger.info("Cargando jugadores...");
+            LOGGER.info("Cargando jugadores...");
             List<Player> players = (List<Player>) getPlayerService().getPlayers();
-            logger.info("Añadiendo nueva economia a {} jugadores...", players.size());
+            LOGGER.info("Añadiendo nueva economia a {} jugadores...", players.size());
             players.forEach(p -> {
                 p.getEconomies().add(new EconomyValue.Builder()
                         .setType(economyType)
@@ -94,7 +96,7 @@ public class EconomyController extends AuthenticatedController {
 
     @PatchMapping("/api/v1/economy/edit")
     public ResponseEntity<MessageResponse> edit(@RequestBody EconomyType economyType, HttpServletRequest request) {
-        ControllerUtils.logRequest(logger, request);
+        ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
         if (!hasPermission(BackendPermissionType.EDIT_ECONOMIES))
@@ -140,7 +142,7 @@ public class EconomyController extends AuthenticatedController {
 
     @DeleteMapping("/api/v1/economy/delete")
     public ResponseEntity<MessageResponse> delete(@RequestBody EconomyDeleteRequest economyDeleteRequest, HttpServletRequest request) {
-        ControllerUtils.logRequest(logger, request);
+        ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
         if (!hasPermission(BackendPermissionType.DELETE_ECONOMIES))

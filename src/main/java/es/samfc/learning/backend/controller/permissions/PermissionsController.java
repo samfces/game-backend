@@ -1,5 +1,6 @@
 package es.samfc.learning.backend.controller.permissions;
 
+import es.samfc.learning.backend.services.impl.PlayerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,10 @@ import java.util.*;
 public class PermissionsController extends AuthenticatedController {
 
     private Logger logger = LoggerFactory.getLogger(PermissionsController.class);
+
+    public PermissionsController(PlayerService playerService) {
+        super(playerService);
+    }
 
     @GetMapping({"/api/v1/permissions", "/api/v1/permissions/"})
     public ResponseEntity<MessageResponse> getPermissions(@RequestParam(name = "player", required = false) String otherPlayerIdOrName, HttpServletRequest request) {

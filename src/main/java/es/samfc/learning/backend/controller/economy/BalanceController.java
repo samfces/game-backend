@@ -1,5 +1,6 @@
 package es.samfc.learning.backend.controller.economy;
 
+import es.samfc.learning.backend.services.impl.PlayerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,8 @@ public class BalanceController extends AuthenticatedController {
     private Logger logger = LoggerFactory.getLogger(BalanceController.class);
     private EconomiesService economiesService;
 
-    public BalanceController(EconomiesService economiesService) {
+    public BalanceController(EconomiesService economiesService, PlayerService playerService) {
+        super(playerService);
         this.economiesService = economiesService;
     }
 

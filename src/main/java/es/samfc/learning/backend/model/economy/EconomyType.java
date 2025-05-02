@@ -43,7 +43,7 @@ public class EconomyType {
 
     public static class Builder {
 
-        private EconomyType buildingEconomyType;
+        private final EconomyType buildingEconomyType;
 
         public Builder() {
             buildingEconomyType = new EconomyType();
