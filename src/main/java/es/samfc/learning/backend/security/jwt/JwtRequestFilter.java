@@ -18,8 +18,8 @@ import es.samfc.learning.backend.security.service.UserDetailsServiceImpl;
 import java.io.IOException;
 
 /**
- * Filters incoming requests and installs a Spring Security principal if a header corresponding to a valid user is
- * found.
+ * Filtrador de peticiones que verifica el token JWT y añade al contexto de la petición
+ * si el token es válido.
  * Se ejecuta por cada petición entrante con el fin de validar el token JWT
  * en caso de que lo sea se añade al contexto para indicar que un usuario está autenticado
  */
@@ -39,15 +39,17 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Same contract as for {@code doFilter}, but guaranteed to be
-     * just invoked once per request within a single request thread.
-     * See {@link #shouldNotFilterAsyncDispatch()} for details.
-     * <p>Provides HttpServletRequest and HttpServletResponse arguments instead of the
-     * default ServletRequest and ServletResponse ones.
+     * Mismo contrato que para {@code doFilter}, pero garantizado que se llama solo una vez
+     * por petición dentro de un solo hilo de petición.
+     * <p>
+     * Consulta {@link #shouldNotFilterAsyncDispatch()} para obtener más detalles.
+     * <p>
+     * Proporciona argumentos HttpServletRequest y HttpServletResponse en lugar de los
+     * predeterminados ServletRequest y ServletResponse.
      *
-     * @param request
-     * @param response
-     * @param filterChain
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param filterChain Filtro de seguridad
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -75,8 +77,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     /**
      * A partir de una cabecera Authorization extrae el token
-     * @param request
-     * @return
+     * @param request HttpServletRequest
+     * @return String con el token
      */
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");

@@ -1,6 +1,11 @@
 package es.samfc.learning.backend.controller.player;
 
+import es.samfc.learning.backend.controller.AuthenticatedController;
+import es.samfc.learning.backend.controller.payload.MessageResponse;
+import es.samfc.learning.backend.model.player.Player;
 import es.samfc.learning.backend.services.impl.PlayerService;
+import es.samfc.learning.backend.utils.controller.ControllerUtils;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,23 +14,34 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import es.samfc.learning.backend.controller.AuthenticatedController;
-import es.samfc.learning.backend.controller.payload.MessageResponse;
-import es.samfc.learning.backend.model.player.Player;
-import es.samfc.learning.backend.utils.controller.ControllerUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
+
+/**
+ * Controlador para operaciones CRUD sobre el jugador actual.
+ */
 @RestController
 public class SelfPlayerController extends AuthenticatedController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlayerController.class);
 
+    /**
+     * Constructor. Obtiene el servicio de jugadores de la aplicación.
+     * @param playerService El servicio de jugadores.
+     */
     public SelfPlayerController(PlayerService playerService) {
         super(playerService);
     }
 
+    /**
+     * Método GET para obtener el jugador actual.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el jugador actual.
+     */
+    @ApiResponse(responseCode = "200", description = "Jugador actual obtenido correctamente")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @GetMapping("/api/v1/self/me")
     public ResponseEntity<MessageResponse> me(HttpServletRequest request) {
         ControllerUtils.logRequest(LOGGER, request);

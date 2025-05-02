@@ -1,12 +1,5 @@
 package es.samfc.learning.backend.controller.economy;
 
-import es.samfc.learning.backend.services.impl.PlayerService;
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import es.samfc.learning.backend.controller.AuthenticatedController;
 import es.samfc.learning.backend.controller.payload.MessageResponse;
 import es.samfc.learning.backend.controller.payload.economy.BalanceData;
@@ -16,11 +9,24 @@ import es.samfc.learning.backend.model.economy.EconomyValue;
 import es.samfc.learning.backend.model.permission.BackendPermissionType;
 import es.samfc.learning.backend.model.player.Player;
 import es.samfc.learning.backend.services.impl.EconomiesService;
+import es.samfc.learning.backend.services.impl.PlayerService;
 import es.samfc.learning.backend.utils.controller.ControllerUtils;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+/**
+ * Controlador para operaciones CRUD sobre el balance de un jugador.
+ */
 
 @RestController
 public class BalanceController extends AuthenticatedController {
@@ -28,13 +34,33 @@ public class BalanceController extends AuthenticatedController {
     private Logger logger = LoggerFactory.getLogger(BalanceController.class);
     private EconomiesService economiesService;
 
+    /**
+     * Constructor. Obtiene el servicio de economías de la aplicación.
+     * @param economiesService El servicio de economías.
+     * @param playerService El servicio de jugadores.
+     */
     public BalanceController(EconomiesService economiesService, PlayerService playerService) {
         super(playerService);
         this.economiesService = economiesService;
     }
 
+    /**
+     * Método POST para depositar dinero en un jugador.
+     * @param depositRequest Cuerpo de la solicitud en el que se incluyen los datos de la transacción.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
+     */
+    @ApiResponse(responseCode = "200", description = "Depósito realizado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @PostMapping("/api/v1/balance/deposit")
-    public ResponseEntity<MessageResponse> deposit(@RequestBody DepositRequest depositRequest, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> deposit(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluyen los datos de la transacción", required = true)
+            DepositRequest depositRequest,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
@@ -79,8 +105,23 @@ public class BalanceController extends AuthenticatedController {
         );
     }
 
+    /**
+     * Método POST para retirar dinero de un jugador.
+     * @param depositRequest Cuerpo de la solicitud en el que se incluyen los datos de la transacción.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
+     */
+    @ApiResponse(responseCode = "200", description = "Retiro realizado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @PostMapping("/api/v1/balance/withdraw")
-    public ResponseEntity<MessageResponse> withdraw(@RequestBody DepositRequest depositRequest, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> withdraw(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluyen los datos de la transacción", required = true)
+            DepositRequest depositRequest,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
@@ -123,8 +164,23 @@ public class BalanceController extends AuthenticatedController {
                 );
     }
 
+    /**
+     * Método GET para obtener el balance de un jugador.
+     * @param otherPlayerIdOrName ID o nombre del jugador.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el balance del jugador.
+     */
+    @ApiResponse(responseCode = "200", description = "Balance obtenido correctamente")
+    @ApiResponse(responseCode = "400", description = "ID o nombre no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @GetMapping({"/api/v1/balance", "/api/v1/balance/"})
-    public ResponseEntity<MessageResponse> getBalance(@RequestParam(name = "player", required = false) String otherPlayerIdOrName, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> getBalance(
+            @RequestParam(name = "player", required = false)
+            @Parameter(description = "ID o nombre del jugador")
+            String otherPlayerIdOrName,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);

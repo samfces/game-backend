@@ -7,6 +7,9 @@ import es.samfc.learning.backend.services.IEconomiesService;
 
 import java.util.List;
 
+/**
+ * Implementación del servicio de economías.
+ */
 @Service
 public class EconomiesService implements IEconomiesService {
 

@@ -7,6 +7,9 @@ import es.samfc.learning.backend.services.IPlayerService;
 
 import java.util.UUID;
 
+/**
+ * Implementación del servicio de jugadores.
+ */
 @Service
 public class PlayerService implements IPlayerService {
 

@@ -7,12 +7,20 @@ import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Clase para obtener el ID de un jugador a partir de su nombre.
+ */
 public class PlayerUUIDFetcher {
 
     private PlayerUUIDFetcher() {
         throw new IllegalStateException("No puede instanciarse PlayerUUIDFetcher");
     }
 
+    /**
+     * Método para obtener el ID de un jugador a partir de su nombre. Obtendremos el ID a partir de la API de PlayerDB.
+     * @param nombreUsuario Nombre del jugador.
+     * @return Optional<UUID> ID del jugador.
+     */
     public static Optional<UUID> getUUID(String nombreUsuario) {
         try {
             URL url = new URL("https://playerdb.co/api/player/minecraft/" + nombreUsuario);

@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Constructor de jugadores.
+ */
 @Component
 public class PlayerConstructor {
 
@@ -25,9 +28,17 @@ public class PlayerConstructor {
     private final CredentialsRepository credentialsRepository;
     private final EconomiesService economiesService;
 
+
     @Value("${app.permissions.default-permissions}")
     private String defaultPermissions;
 
+    /**
+     * Constructor con los servicios de encriptación, repositorios de jugadores y economías.
+     * @param encoders Servicio de encriptación.
+     * @param playerRepository Repositorio de jugadores.
+     * @param credentialsRepository Repositorio de credenciales.
+     * @param economiesService Servicio de economías.
+     */
     public PlayerConstructor(Encoders encoders, PlayerRepository playerRepository, CredentialsRepository credentialsRepository, EconomiesService economiesService) {
         this.encoders = encoders;
         this.playerRepository = playerRepository;
@@ -36,6 +47,11 @@ public class PlayerConstructor {
     }
 
 
+    /**
+     * Método para construir un jugador.
+     * @param register Cuerpo de la solicitud en el que se incluye el nombre del usuario y la contraseña.
+     * @return boolean true si se ha construido correctamente el jugador.
+     */
     public boolean buildPlayer(RegisterRequest register) {
 
 

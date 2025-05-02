@@ -1,20 +1,5 @@
 package es.samfc.learning.backend.controller.auth;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 import es.samfc.learning.backend.controller.payload.MessageResponse;
 import es.samfc.learning.backend.controller.payload.auth.LoginRequest;
 import es.samfc.learning.backend.controller.payload.auth.PasswordChangeRequest;
@@ -31,10 +16,32 @@ import es.samfc.learning.backend.security.jwt.JwtTokenUtil;
 import es.samfc.learning.backend.security.service.UserDetailsServiceImpl;
 import es.samfc.learning.backend.utils.password.PasswordChecker;
 import es.samfc.learning.backend.utils.player.PlayerConstructor;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+
+/**
+ * Controlador de autenticación
+ * Controlador que maneja las peticiones de autenticación y registro de usuarios.
+ */
 
 @RestController
 public class AuthController {
@@ -56,6 +63,19 @@ public class AuthController {
     @Value("${app.jwt.expiration-ms}") private int jwtExpirationMs;
     @Value("${app.password.min-strength}") private int passwordMinStrength;
 
+    /**
+     * Constructor de la clase
+     * Constructor que inicializa los servicios de autenticación y registro de usuarios.
+     *
+     * @param encoders Objeto de codificación de contraseñas
+     * @param userDetailsService Servicio de usuarios
+     * @param authenticationManager Gestor de autenticación
+     * @param playerConstructor Constructor de jugadores
+     * @param playerRepository Repositorio de jugadores
+     * @param credentialsRepository Repositorio de credenciales
+     * @param jwtTokenUtil Utilidades de token JWT
+     * @param refreshTokenRepository Repositorio de tokens de refresco
+     */
     public AuthController(Encoders encoders,
                           UserDetailsServiceImpl userDetailsService,
                           AuthenticationManager authenticationManager,
@@ -74,8 +94,22 @@ public class AuthController {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
+    /**
+     * Método POST para iniciar sesión
+     * Método POST que inicia la sesión del usuario con el token JWT.
+     *
+     * @param login Objeto de solicitud de inicio de sesión
+     * @return Objeto de respuesta con el mensaje de inicio de sesión
+     */
+    @ApiResponse(responseCode = "200", description = "Login correcto")
+    @ApiResponse(responseCode = "400", description = "Datos incorrectos")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/login")
-    public ResponseEntity<MessageResponse> login(@RequestBody LoginRequest login) {
+    public ResponseEntity<MessageResponse> login(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye el nombre de usuario y la contraseña", required = true)
+            LoginRequest login
+    ) {
         LOGGER.info("POST /api/v1/auth/login");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
@@ -105,8 +139,15 @@ public class AuthController {
         );
     }
 
+    @ApiResponse(responseCode = "200", description = "Token de refresco actualizado correctamente")
+    @ApiResponse(responseCode = "400", description = "Token de refresco no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/refresh")
-    public ResponseEntity<MessageResponse> refresh(@RequestBody RefreshRequest refresh) {
+    public ResponseEntity<MessageResponse> refresh(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye el token de refresco", required = true)
+            RefreshRequest refresh
+    ) {
         LOGGER.info("POST /api/v1/auth/refresh");
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
         if (refreshTokenOptional.isEmpty()) {
@@ -150,6 +191,8 @@ public class AuthController {
         );
     }
 
+    @ApiResponse(responseCode = "200", description = "Sesión cerrada correctamente")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/logout")
     public ResponseEntity<MessageResponse> logout() {
         LOGGER.info("POST /api/v1/auth/logout");
@@ -168,8 +211,15 @@ public class AuthController {
         );
     }
 
+    @ApiResponse(responseCode = "201", description = "Usuario creado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no especificado")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/register")
-    public ResponseEntity<MessageResponse> register(@RequestBody RegisterRequest register) {
+    public ResponseEntity<MessageResponse> register(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye el nombre del usuario y la contraseña", required = true)
+            RegisterRequest register
+    ) {
         LOGGER.info("POST /api/v1/auth/register");
 
         if (playerRepository.existsByName(register.getUsername())) {
@@ -201,8 +251,15 @@ public class AuthController {
         );
     }
 
+    @ApiResponse(responseCode = "200", description = "Contraseña actualizada correctamente")
+    @ApiResponse(responseCode = "400", description = "Contraseña actual incorrecta o no válida")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/password/change")
-    public ResponseEntity<MessageResponse> changePassword(@RequestBody PasswordChangeRequest passwordChange) {
+    public ResponseEntity<MessageResponse> changePassword(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye la contraseña actual y la nueva contraseña", required = true)
+            PasswordChangeRequest passwordChange
+    ) {
         LOGGER.info("POST /api/v1/auth/password/change");
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());

@@ -5,6 +5,9 @@ import es.samfc.learning.backend.model.player.Player;
 
 import java.util.UUID;
 
+/**
+ * Repositorio de jugadores.
+ */
 public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
     boolean existsByName(String name);

@@ -18,6 +18,12 @@ import es.samfc.learning.backend.security.encryption.Encoders;
 import es.samfc.learning.backend.security.handling.CustomAccessDeniedHandler;
 import es.samfc.learning.backend.security.jwt.JwtRequestFilter;
 
+/**
+ * Configuración de seguridad
+ * Configuración de filtros de seguridad y manejadores de acceso denegado para la aplicación.
+ */
+
+
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {

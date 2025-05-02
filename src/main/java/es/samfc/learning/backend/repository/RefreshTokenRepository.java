@@ -7,6 +7,10 @@ import es.samfc.learning.backend.model.auth.RefreshToken;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repositorio de tokens de refresco.
+ * Los tokens de refresco son utilizados para validar la sesión de un jugador.
+ */
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
     Optional<RefreshToken> findByUsername(String username);

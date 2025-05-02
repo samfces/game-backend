@@ -1,12 +1,5 @@
 package es.samfc.learning.backend.controller.economy;
 
-import es.samfc.learning.backend.services.impl.PlayerService;
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import es.samfc.learning.backend.controller.AuthenticatedController;
 import es.samfc.learning.backend.controller.payload.MessageResponse;
 import es.samfc.learning.backend.controller.payload.economy.EconomyDeleteRequest;
@@ -15,10 +8,23 @@ import es.samfc.learning.backend.model.economy.EconomyValue;
 import es.samfc.learning.backend.model.permission.BackendPermissionType;
 import es.samfc.learning.backend.model.player.Player;
 import es.samfc.learning.backend.services.impl.EconomiesService;
+import es.samfc.learning.backend.services.impl.PlayerService;
 import es.samfc.learning.backend.utils.controller.ControllerUtils;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+
+/**
+ * Controlador para operaciones CRUD sobre el economía de un jugador.
+ */
 
 @RestController
 public class EconomyController extends AuthenticatedController {
@@ -26,13 +32,33 @@ public class EconomyController extends AuthenticatedController {
     private final EconomiesService economiesService;
     private static final Logger LOGGER = LoggerFactory.getLogger(EconomyController.class);
 
+    /**
+     * Constructor. Obtiene el servicio de economías de la aplicación.
+     * @param economiesService El servicio de economías.
+     * @param playerService El servicio de jugadores.
+     */
     public EconomyController(EconomiesService economiesService, PlayerService playerService) {
         super(playerService);
         this.economiesService = economiesService;
     }
 
+    /**
+     * Método POST para crear un tipo de economía.
+     * @param economyType Tipo de economía a crear.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
+     */
+    @ApiResponse(responseCode = "201", description = "Tipo de economía creado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @PostMapping("/api/v1/economy/create")
-    public ResponseEntity<MessageResponse> create(@RequestBody EconomyType economyType, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> create(
+            @RequestBody
+            @Parameter(description = "Tipo de economía a crear", required = true)
+            EconomyType economyType,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
@@ -68,21 +94,18 @@ public class EconomyController extends AuthenticatedController {
         );
 
         economiesService.saveEconomyType(economyType);
-
-        new Thread(() -> {
-            LOGGER.info("Cargando jugadores...");
-            List<Player> players = (List<Player>) getPlayerService().getPlayers();
-            LOGGER.info("Añadiendo nueva economia a {} jugadores...", players.size());
-            players.forEach(p -> {
-                p.getEconomies().add(new EconomyValue.Builder()
-                        .setType(economyType)
-                        .setValue(0.0)
-                        .setPlayer(p)
-                        .build()
-                );
-                getPlayerService().savePlayer(p);
-            });
-        }).start();
+        LOGGER.info("Cargando jugadores...");
+        List<Player> players = (List<Player>) getPlayerService().getPlayers();
+        LOGGER.info("Añadiendo nueva economia a {} jugadores...", players.size());
+        players.forEach(p -> {
+            p.getEconomies().add(new EconomyValue.Builder()
+                    .setType(economyType)
+                    .setValue(0.0)
+                    .setPlayer(p)
+                    .build()
+            );
+            getPlayerService().savePlayer(p);
+        });
 
         return ResponseEntity.ok(
                 new MessageResponse.Builder()
@@ -94,8 +117,23 @@ public class EconomyController extends AuthenticatedController {
         );
     }
 
+    /**
+     * Método PATCH para editar un tipo de economía.
+     * @param economyType Tipo de economía a editar.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
+     */
+    @ApiResponse(responseCode = "200", description = "Tipo de economía editado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @PatchMapping("/api/v1/economy/edit")
-    public ResponseEntity<MessageResponse> edit(@RequestBody EconomyType economyType, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> edit(
+            @RequestBody
+            @Parameter(description = "Tipo de economía a editar", required = true)
+            EconomyType economyType,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
@@ -140,8 +178,23 @@ public class EconomyController extends AuthenticatedController {
         );
     }
 
+    /**
+     * Método DELETE para eliminar un tipo de economía.
+     * @param economyDeleteRequest Cuerpo de la solicitud en el que se incluye el ID del tipo de economía a eliminar.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
+     */
+    @ApiResponse(responseCode = "204", description = "Tipo de economía eliminado correctamente")
+    @ApiResponse(responseCode = "400", description = "ID no válido")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
     @DeleteMapping("/api/v1/economy/delete")
-    public ResponseEntity<MessageResponse> delete(@RequestBody EconomyDeleteRequest economyDeleteRequest, HttpServletRequest request) {
+    public ResponseEntity<MessageResponse> delete(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye el ID del tipo de economía a eliminar", required = true)
+            EconomyDeleteRequest economyDeleteRequest,
+            HttpServletRequest request
+    ) {
         ControllerUtils.logRequest(LOGGER, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
