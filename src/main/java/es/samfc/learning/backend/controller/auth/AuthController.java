@@ -1,0 +1,266 @@
+package es.samfc.learning.backend.controller.auth;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import es.samfc.learning.backend.controller.payload.MessageResponse;
+import es.samfc.learning.backend.controller.payload.auth.LoginRequest;
+import es.samfc.learning.backend.controller.payload.auth.PasswordChangeRequest;
+import es.samfc.learning.backend.controller.payload.auth.RefreshRequest;
+import es.samfc.learning.backend.controller.payload.auth.RegisterRequest;
+import es.samfc.learning.backend.model.auth.PlayerCredentials;
+import es.samfc.learning.backend.model.auth.RefreshToken;
+import es.samfc.learning.backend.model.player.Player;
+import es.samfc.learning.backend.repository.CredentialsRepository;
+import es.samfc.learning.backend.repository.PlayerRepository;
+import es.samfc.learning.backend.repository.RefreshTokenRepository;
+import es.samfc.learning.backend.security.encryption.Encoders;
+import es.samfc.learning.backend.security.jwt.JwtTokenUtil;
+import es.samfc.learning.backend.security.service.UserDetailsServiceImpl;
+import es.samfc.learning.backend.utils.password.PasswordChecker;
+import es.samfc.learning.backend.utils.player.PlayerConstructor;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+public class AuthController {
+
+    private Logger logger = LoggerFactory.getLogger(AuthController.class);
+
+    private final Encoders encoders;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenUtil jwtTokenUtil;
+    private final PlayerConstructor playerConstructor;
+
+    //Repositories
+    private final PlayerRepository playerRepository;
+    private final CredentialsRepository credentialsRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    @Value("${app.refresh-token.expiration-ms}") private int refreshTokenExpirationMs;
+    @Value("${app.jwt.expiration-ms}") private int jwtExpirationMs;
+    @Value("${app.password.min-strength}") private int passwordMinStrength;
+
+    public AuthController(Encoders encoders,
+                          UserDetailsServiceImpl userDetailsService,
+                          AuthenticationManager authenticationManager,
+                          PlayerConstructor playerConstructor,
+                          PlayerRepository playerRepository,
+                          CredentialsRepository credentialsRepository,
+                          JwtTokenUtil jwtTokenUtil,
+                          RefreshTokenRepository refreshTokenRepository) {
+        this.encoders = encoders;
+        this.userDetailsService = userDetailsService;
+        this.authenticationManager = authenticationManager;
+        this.playerConstructor = playerConstructor;
+        this.playerRepository = playerRepository;
+        this.credentialsRepository = credentialsRepository;
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.refreshTokenRepository = refreshTokenRepository;
+    }
+
+    @PostMapping("/api/v1/auth/login")
+    public ResponseEntity<MessageResponse> login(@RequestBody LoginRequest login) {
+        logger.info("POST /api/v1/auth/login");
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtTokenUtil.generateJwtToken(authentication);
+
+        refreshTokenRepository.deleteByUsername(login.getUsername());
+
+        RefreshToken refreshToken = RefreshToken.generate(login.getUsername(), new Date(System.currentTimeMillis() + refreshTokenExpirationMs));
+        refreshTokenRepository.save(refreshToken);
+
+        return ResponseEntity.ok(new MessageResponse.Builder()
+                .status(HttpStatus.OK)
+                .payload("path", "/api/v1/auth/login")
+                .payload("message", "Sesión iniciada correctamente")
+                .payload("data", Map.of(
+                    "token", jwt,
+                    "tokenExpiration", new Date(System.currentTimeMillis() + jwtExpirationMs),
+                    "refreshToken", Map.of(
+                            "token", refreshToken.getToken(),
+                            "expiration", new Date(System.currentTimeMillis() + refreshTokenExpirationMs)
+                        )
+                ))
+                .build()
+        );
+    }
+
+    @PostMapping("/api/v1/auth/refresh")
+    public ResponseEntity<MessageResponse> refresh(@RequestBody RefreshRequest refresh) {
+        logger.info("POST /api/v1/auth/refresh");
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken().toString());
+        if (refreshTokenOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.UNAUTHORIZED)
+                            .payload("path", "/api/v1/auth/refresh")
+                            .payload("message", "No existe un token de refresco para el usuario")
+                            .build()
+            );
+        }
+
+        RefreshToken refreshToken = refreshTokenOptional.get();
+        if (refreshToken.getExpirationDate().before(new Date())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.UNAUTHORIZED)
+                            .payload("path", "/api/v1/auth/refresh")
+                            .payload("message", "El token de refresco ha expirado")
+                            .build()
+            );
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(refreshToken.getUsername());
+        User user = new User(userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, userDetails.getAuthorities());
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtTokenUtil.generateJwtToken(authentication);
+
+        return ResponseEntity.ok(new MessageResponse.Builder()
+                .status(HttpStatus.OK)
+                .payload("path", "/api/v1/auth/refresh")
+                .payload("message", "Sesión actualizada correctamente")
+                .payload("data", Map.of(
+                    "token", jwt,
+                    "refreshToken", new Date(System.currentTimeMillis() + jwtExpirationMs)
+                ))
+                .build()
+        );
+    }
+
+    @PostMapping("/api/v1/auth/logout")
+    public ResponseEntity<MessageResponse> logout() {
+        logger.info("POST /api/v1/auth/logout");
+        UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+        RefreshToken refreshToken = refreshTokenRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        if (refreshToken != null) {
+            refreshTokenRepository.delete(refreshToken);
+        }
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.ok(new MessageResponse.Builder()
+                .status(HttpStatus.OK)
+                .payload("path", "/api/v1/auth/logout")
+                .payload("message", "Sesión cerrada correctamente")
+                .payload("data", Map.of(
+                    "token", null,
+                    "refreshToken", null
+                ))
+                .build()
+        );
+    }
+
+    @PostMapping("/api/v1/auth/register")
+    public ResponseEntity<MessageResponse> register(@RequestBody RegisterRequest register) {
+        logger.info("POST /api/v1/auth/register");
+
+        if (playerRepository.existsByName(register.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.CONFLICT)
+                            .payload("path", "/api/v1/auth/register")
+                            .payload("message", "Usuario ya existente")
+                            .build()
+            );
+        }
+
+        if (playerConstructor.buildPlayer(register)) {
+            return ResponseEntity.ok(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.OK)
+                            .payload("path", "/api/v1/auth/register")
+                            .payload("message", "Registro exitoso")
+                            .build()
+            );
+        }
+
+        return ResponseEntity.internalServerError().body(
+                new MessageResponse.Builder()
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .payload("path", "/api/v1/auth/register")
+                        .payload("message", "Error al registrar el usuario")
+                        .build()
+        );
+    }
+
+    @PostMapping("/api/v1/auth/password/change")
+    public ResponseEntity<MessageResponse> changePassword(@RequestBody PasswordChangeRequest passwordChange) {
+        logger.info("POST /api/v1/auth/password/change");
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        if (!encoders.getPasswordEncoder().matches(passwordChange.getOldPassword(), userDetails.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.UNAUTHORIZED)
+                            .payload("path", "/api/v1/auth/password/change")
+                            .payload("message", "Contraseña actual incorrecta")
+                            .build()
+            );
+        }
+
+        if (passwordChange.getOldPassword().equals(passwordChange.getNewPassword())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .payload("path", "/api/v1/auth/password/change")
+                            .payload("message", "La nueva contraseña no puede ser igual a la actual")
+                            .build()
+            );
+        }
+
+        int passwordStrength = PasswordChecker.getPasswordStrength(passwordChange.getNewPassword());
+        logger.info("Password strength: {}", passwordStrength);
+        if (passwordStrength < passwordMinStrength) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .payload("path", "/api/v1/auth/password/change")
+                            .payload("message", "La nueva contraseña no es segura")
+                            .build()
+            );
+        }
+
+        String encodedPassword = encoders.getPasswordEncoder().encode(passwordChange.getNewPassword());
+
+        Player player = playerRepository.findByName(SecurityContextHolder.getContext().getAuthentication().getName());
+        PlayerCredentials credentials = credentialsRepository.findById(player.getUniqueId()).orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+        credentials.setPassword(encodedPassword);
+        credentialsRepository.save(credentials);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        if (refreshToken != null) {
+            refreshTokenRepository.delete(refreshToken);
+        }
+
+        return ResponseEntity.ok(new MessageResponse.Builder()
+                .status(HttpStatus.OK)
+                .payload("path", "/api/v1/auth/password/change")
+                .payload("message", "Contraseña actualizada correctamente. Inicia sesión con la nueva contraseña.")
+                .build());
+    }
+
+
+
+}
