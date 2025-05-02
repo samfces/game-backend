@@ -27,7 +27,9 @@ public class JwtTokenUtil {
     @Value("${app.jwt.expiration-ms}")
     private int jwtExpirationMs;
 
-    public JwtTokenUtil() {}
+    public JwtTokenUtil() {
+        //Empty constructor for Spring
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);

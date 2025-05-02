@@ -34,7 +34,9 @@ public class Player {
     @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private BackendPermissions backendPermissions;
 
-    public Player() {}
+    public Player() {
+        //Empty constructor for JPA
+    }
 
     public UUID getUniqueId() {
         return uniqueId;

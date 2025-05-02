@@ -14,6 +14,7 @@ public class EconomyType {
     private String plural;
 
     public EconomyType() {
+        //Empty constructor for JPA
     }
 
     public Integer getId() {

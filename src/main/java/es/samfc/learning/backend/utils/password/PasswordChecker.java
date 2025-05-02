@@ -2,6 +2,10 @@ package es.samfc.learning.backend.utils.password;
 
 public class PasswordChecker {
 
+    private PasswordChecker() {
+        throw new IllegalStateException("Illegal constructor");
+    }
+
     public static int getPasswordStrength(String password) {
         int strength = 0;
 

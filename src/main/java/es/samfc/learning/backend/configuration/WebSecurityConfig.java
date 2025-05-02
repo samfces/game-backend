@@ -22,14 +22,12 @@ import es.samfc.learning.backend.security.jwt.JwtRequestFilter;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
-    private final Encoders encoders;
-    private final UserDetailsService userDetailsService;
     private final JwtRequestFilter jwtRequestFilter;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    public WebSecurityConfig(Encoders encoders, UserDetailsService userDetailsService, JwtRequestFilter jwtRequestFilter, CustomAccessDeniedHandler accessDeniedHandler) {
-        this.encoders = encoders;
-        this.userDetailsService = userDetailsService;
+    public WebSecurityConfig(JwtRequestFilter jwtRequestFilter,
+                             CustomAccessDeniedHandler accessDeniedHandler
+    ) {
         this.jwtRequestFilter = jwtRequestFilter;
         this.accessDeniedHandler = accessDeniedHandler;
     }
@@ -56,8 +54,7 @@ public class WebSecurityConfig {
     public AuthenticationManager authenticationManager(
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder);
 
         return new ProviderManager(authenticationProvider);

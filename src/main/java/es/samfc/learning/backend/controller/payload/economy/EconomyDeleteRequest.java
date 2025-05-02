@@ -5,6 +5,7 @@ public class EconomyDeleteRequest {
     private Integer id;
 
     public EconomyDeleteRequest() {
+        //Empty constructor for Jackson
     }
 
     public Integer getId() {

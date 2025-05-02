@@ -8,6 +8,10 @@ import es.samfc.learning.backend.controller.payload.MessageResponse;
 
 public class ControllerUtils {
 
+    private ControllerUtils() {
+        throw new IllegalStateException("Illegal constructor");
+    }
+
     public static void logRequest(Logger logger, HttpServletRequest request) {
         logger.info("{} {}", request.getMethod(), request.getRequestURI());
     }

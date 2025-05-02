@@ -18,16 +18,19 @@ public class Encoders {
     @Value("${app.encryption.method}")
     private String encryptionMethod;
 
-    private Logger logger = LoggerFactory.getLogger(Encoders.class);
+    private final Logger logger = LoggerFactory.getLogger(Encoders.class);
 
-    private HashMap<String, PasswordEncoder> passwordEncoders = new HashMap<>() {{
-        put("bcrypt", new BCryptPasswordEncoder());
-        put("pbkdf2", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-        put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
-        put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-        put("sha256", new StandardPasswordEncoder());
-        put("noop", NoOpPasswordEncoder.getInstance());
-    }};
+    private final HashMap<String, PasswordEncoder> passwordEncoders;
+
+    public Encoders() {
+        passwordEncoders = new HashMap<>();
+        passwordEncoders.put("bcrypt", new BCryptPasswordEncoder());
+        passwordEncoders.put("pbkdf2", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+        passwordEncoders.put("scrypt", SCryptPasswordEncoder.defaultsForSpringSecurity_v5_8());
+        passwordEncoders.put("argon2", Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+        passwordEncoders.put("sha256", new StandardPasswordEncoder());
+        passwordEncoders.put("noop", NoOpPasswordEncoder.getInstance());
+    }
 
     private PasswordEncoder passwordEncoder;
 

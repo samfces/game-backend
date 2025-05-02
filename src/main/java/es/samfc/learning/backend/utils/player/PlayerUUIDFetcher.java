@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public class PlayerUUIDFetcher {
 
-    public PlayerUUIDFetcher() {
+    private PlayerUUIDFetcher() {
         throw new IllegalStateException("No puede instanciarse PlayerUUIDFetcher");
     }
 

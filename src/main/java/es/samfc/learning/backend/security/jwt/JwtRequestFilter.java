@@ -26,7 +26,7 @@ import java.io.IOException;
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtRequestFilter.class);
     public static final String BEARER = "Bearer ";
 
     private final JwtTokenUtil jwtTokenUtil;
@@ -60,9 +60,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                System.out.println("Authenticated user: " + userDetails.getUsername());
-                userDetails.getAuthorities().forEach(auth -> System.out.println("Authority: " + auth.getAuthority()));
-
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -70,7 +67,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            LOGGER.error("Cannot set user authentication: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

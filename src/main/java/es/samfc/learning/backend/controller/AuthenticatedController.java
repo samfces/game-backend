@@ -1,11 +1,10 @@
 package es.samfc.learning.backend.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.RestController;
 import es.samfc.learning.backend.model.permission.BackendPermissionType;
 import es.samfc.learning.backend.model.player.Player;
 import es.samfc.learning.backend.services.impl.PlayerService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -13,7 +12,11 @@ import java.util.UUID;
 @RestController
 public class AuthenticatedController {
 
-    @Autowired private PlayerService playerService;
+    private final PlayerService playerService;
+
+    public AuthenticatedController(PlayerService playerService) {
+        this.playerService = playerService;
+    }
 
     public PlayerService getPlayerService() {
         return playerService;

@@ -35,6 +35,10 @@ public enum BackendPermissionType {
 
     public static class Calculator {
 
+        private Calculator() {
+            throw new IllegalStateException("Illegal constructor");
+        }
+
         public static int toInt(BackendPermissionType... permissionTypes) {
             int result = 0;
             for (BackendPermissionType permissionType : permissionTypes) {
@@ -76,5 +80,6 @@ public enum BackendPermissionType {
             }
             return result;
         }
+
     }
 }

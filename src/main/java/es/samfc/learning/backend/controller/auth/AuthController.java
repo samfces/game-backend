@@ -108,7 +108,7 @@ public class AuthController {
     @PostMapping("/api/v1/auth/refresh")
     public ResponseEntity<MessageResponse> refresh(@RequestBody RefreshRequest refresh) {
         logger.info("POST /api/v1/auth/refresh");
-        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken().toString());
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
         if (refreshTokenOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     new MessageResponse.Builder()
