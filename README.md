@@ -35,7 +35,7 @@ cd game-backend
 
 ### 2. Configurar la base de datos
 
-Asegúrate de tener PostgreSQL instalado y ejecutándose. Crea una base de datos con el nombre `minebox-backend` y asegúrate de que las credenciales en el archivo `application.properties` estén correctas.
+Asegúrate de tener PostgreSQL instalado y ejecutándose. Crea una base de datos con el nombre `game-backend` y asegúrate de que las credenciales en el archivo `application.properties` estén correctas.
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/game-backend
