@@ -1,30 +1,43 @@
-# Game Backend
+# 🎮 Game Backend – JWT Auth + Spring Boot API
 
-Este es un proyecto de backend de ejemplo desarrollado con Spring Boot, que incluye autenticación con JWT, gestión de usuarios, y acceso a base de datos con PostgreSQL. Es parte de mi portfolio profesional, demostrando habilidades en desarrollo Java, Spring Boot y gestión de servicios web.
+Este es un proyecto backend profesional desarrollado con **Spring Boot**, enfocado en la autenticación segura con **JWT**, gestión de usuarios, y persistencia de datos usando **PostgreSQL**. Forma parte de mi portfolio y demuestra mis habilidades en desarrollo backend moderno con Java y Spring.
 
-## Descripción
+---
 
-El proyecto maneja la autenticación de usuarios, tokens JWT, refresco de sesión, y la gestión de contraseñas seguras. Además, se conecta a una base de datos PostgreSQL para el almacenamiento de información del jugador, como credenciales y detalles de sesión.
+## 📌 Descripción
 
-## Características
+La aplicación ofrece un sistema completo de autenticación, incluyendo:
+- Emisión y refresco de tokens JWT
+- Gestión segura de contraseñas con BCrypt
+- Control de acceso basado en permisos bitwise
+- Exposición de endpoints REST documentados con Swagger
+- Persistencia con Spring Data JPA y PostgreSQL
 
-- Autenticación con JWT para gestionar sesiones de usuarios.
-- Refresco de tokens JWT para mantener sesiones activas.
-- Gestión segura de contraseñas utilizando Bcrypt (configurable).
-- Sistema de permisos (bitwise) para definir permisos de usuarios.
-- Integración con base de datos PostgreSQL.
-- Uso de Spring Data JPA para la interacción con la base de datos.
-- Seguridad mediante Spring Security.
-- Exposición de endpoints REST con Swagger/OpenAPI.
-- Configuración de propiedades para JWT y parámetros de seguridad.
-- Javadocs generalizados y detallados.
+---
 
-## Requisitos
+## ✨ Características
+
+- 🔐 Autenticación basada en JWT
+- ♻️ Refresco de tokens para sesiones persistentes
+- 🔒 BCrypt configurable para encriptar contraseñas
+- 🛡️ Sistema de permisos bitwise
+- 💾 Integración con PostgreSQL
+- 📚 Interacción con la base de datos mediante Spring Data JPA
+- 🧱 Seguridad basada en Spring Security
+- 📖 Documentación de la API con Swagger/OpenAPI
+- ⚙️ Configuración flexible desde `application.properties`
+- 🧠 Código documentado con Javadoc detallado
+
+---
+
+## ⚙️ Requisitos
 
 - Java 17
-- PostgreSQL 13 o superior
+- PostgreSQL 13+
 
-## Instalación
+---
+
+## 🚀 Instalación
 
 ### 1. Clonar el repositorio
 
@@ -54,17 +67,23 @@ Usa Gradle para compilar y ejecutar el proyecto.
 
 El backend estará disponible en `http://localhost:8080`.
 
-## Javadocs
+---
 
-Puede acceder a la documentación de todas las clases del proyecto en Javadocs accediendo a: https://samfc.es/docs/game-backend/
+## 📚 Documentación
 
-## Endpoints Docs
+### Javadocs
 
-Puede revisar tda documentación de la API REST en Swagger UI. Una vez que el servidor esté en ejecución, puedes acceder a la documentación de la API en: http://localhost:8080/swagger-ui/index.html
+Puedes explorar la documentación completa del código en:
+📎 [https://samfc.es/docs/game-backend/](https://samfc.es/docs/game-backend/)
 
-### Configuración
+### Swagger API Docs
 
-Los parámetros de configuración para JWT, refresco de sesión y contraseñas se definen en el archivo `application.properties`:
+Una vez ejecutado el servidor, accede a la documentación interactiva de la API en:
+📎 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+## ⚙️ Configuración
+
+Personaliza la seguridad y comportamiento del backend a través de `application.properties`:
 
 ```properties
 app.jwt.secret=secret
@@ -73,11 +92,17 @@ app.refresh-token.expiration-ms=86400000
 app.permissions.default-permissions=VIEW_BALANCE;VIEW_OTHERS_BALANCE
 app.password.min-strength=2
 ```
-## Contribuciones
 
-Si deseas colaborar en este proyecto, por favor realiza un fork y abre un pull request con tus cambios.
+## 🤝 Contribuciones
 
-## Licencia
+Las contribuciones son bienvenidas. Si deseas colaborar:
 
-Este proyecto está bajo la licencia MIT. Para más detalles, consulta el archivo `LICENSE`.
+1. Haz un fork del repositorio.
+2. Crea una nueva rama con tu funcionalidad.
+3. Abre un Pull Request para revisión.
+
+
+## 📝 Licencia
+
+Este proyecto está licenciado bajo la [MIT License](LICENSE).
 
