@@ -2,6 +2,7 @@ package es.samfc.gamebackend.controller.auth;
 
 import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
+import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.player.Player;
 import es.samfc.gamebackend.services.impl.PlayerService;
 import es.samfc.gamebackend.utils.controller.ControllerUtils;
@@ -21,6 +22,7 @@ import java.util.Optional;
  */
 @RestController
 public class AuthLogController extends AuthenticatedController {
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthLogController.class);
 
@@ -44,13 +46,15 @@ public class AuthLogController extends AuthenticatedController {
 
         int limit = 10; //TODO: Make this configurable
 
-        return ResponseEntity.ok(new MessageResponse.Builder()
+        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/log")
                 .payload("message", "Datos de inicio de sesión obtenidos correctamente")
                 .payload("data", player.get().getLoginDatas().subList(0, Math.min(limit, player.get().getLoginDatas().size())))
                 .build()
         );
+        callEvent(RestEventType.AUTH_LOG, null, ok);
+        return ok;
 
     }
 }
