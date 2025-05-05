@@ -5,6 +5,7 @@ import es.samfc.learning.backend.controller.payload.MessageResponse;
 import es.samfc.learning.backend.model.player.Player;
 import es.samfc.learning.backend.services.impl.PlayerService;
 import es.samfc.learning.backend.utils.controller.ControllerUtils;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
+/**
+ * Controlador para obtener los datos de inicio de sesión del jugador.
+ */
 @RestController
 public class AuthLogController extends AuthenticatedController {
 
@@ -24,7 +28,14 @@ public class AuthLogController extends AuthenticatedController {
         super(playerService);
     }
 
+    /**
+     * Método GET para obtener los datos de inicio de sesión del jugador.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con los datos de inicio de sesión del jugador.
+     */
     @GetMapping("/api/v1/auth/log")
+    @ApiResponse(responseCode = "200", description = "Datos de inicio de sesión obtenidos correctamente")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
     public ResponseEntity<MessageResponse> log(HttpServletRequest request) {
         ControllerUtils.logRequest(LOGGER, request);
         if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
