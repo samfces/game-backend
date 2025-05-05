@@ -4,6 +4,7 @@ import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.economy.BalanceData;
 import es.samfc.gamebackend.controller.payload.economy.DepositRequest;
+import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.economy.EconomyType;
 import es.samfc.gamebackend.model.economy.EconomyValue;
 import es.samfc.gamebackend.model.permission.BackendPermissionType;
@@ -62,29 +63,49 @@ public class BalanceController extends AuthenticatedController {
             HttpServletRequest request
     ) {
         ControllerUtils.logRequest(logger, request);
+        ResponseEntity<MessageResponse> response = null;
 
-        if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
-        if (!hasPermission(BackendPermissionType.EDIT_OTHERS_BALANCE)) return ControllerUtils.buildForbiddenResponse(request);
+        if (!isAuthenticated() || !isPlayerPresent()) response = ControllerUtils.buildUnauthorizedResponse(request);
+        else if (!hasPermission(BackendPermissionType.EDIT_OTHERS_BALANCE)) response = ControllerUtils.buildForbiddenResponse(request);
+        if (response != null) {
+            callEvent(RestEventType.BALANCE_DEPOSIT, depositRequest, response);
+            return response;
+        }
 
-        Player otherPlayer;
+        // Buscamos el jugador. En la solicitud se puede especificar el ID o el nombre por
+        // lo que intentamos buscarlo primero por ID y si no lo encuentra, buscamos por nombre
+        Player otherPlayer = null;
         if (depositRequest.getUserId() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserId());
-            if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
+            if (otherPlayer == null) {
+                response = ControllerUtils.buildPlayerNotFoundResponse(request);
+            }
         } else if (depositRequest.getUserName() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserName());
-            if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
+            if (otherPlayer == null) {
+                response = ControllerUtils.buildPlayerNotFoundResponse(request);
+            }
         } else {
-            return ControllerUtils.buildPlayerNotFoundResponse(request);
+            response = ControllerUtils.buildPlayerNotFoundResponse(request);
+        }
+
+        //Si no se ha encontrado el jugador, la respuesta no es nula por lo que
+        //finalizamos la operación
+        if (response != null) {
+            callEvent(RestEventType.BALANCE_DEPOSIT, depositRequest, response);
+            return response;
         }
 
         if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount())){
-            return ResponseEntity.status(400).body(
-                    new MessageResponse.Builder()
-                            .status(HttpStatus.BAD_REQUEST)
-                            .payload("path", request.getRequestURI())
-                            .payload("message", "Cantidad no válida")
-                            .build()
-            );
+             response = ResponseEntity.status(400).body(
+                     new MessageResponse.Builder()
+                             .status(HttpStatus.BAD_REQUEST)
+                             .payload("path", request.getRequestURI())
+                             .payload("message", "Cantidad no válida")
+                             .build()
+             );
+             callEvent(RestEventType.BALANCE_DEPOSIT, depositRequest, response);
+            return response;
         }
 
         EconomyType type = economiesService.getEconomyType(depositRequest.getType());
@@ -93,7 +114,7 @@ public class BalanceController extends AuthenticatedController {
 
         getPlayerService().savePlayer(otherPlayer);
 
-        return ResponseEntity.ok(
+        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(
                 new MessageResponse.Builder()
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
@@ -103,6 +124,8 @@ public class BalanceController extends AuthenticatedController {
                         .payload("updated", value.getValue())
                         .build()
         );
+        callEvent(RestEventType.BALANCE_DEPOSIT, otherPlayer, ok);
+        return ok;
     }
 
     /**
@@ -123,21 +146,37 @@ public class BalanceController extends AuthenticatedController {
             HttpServletRequest request
     ) {
         ControllerUtils.logRequest(logger, request);
+        ResponseEntity<MessageResponse> response = null;
 
         if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
         if (!hasPermission(BackendPermissionType.EDIT_OTHERS_BALANCE)) return ControllerUtils.buildForbiddenResponse(request);
 
-        Player otherPlayer;
+        Player otherPlayer = null;
+
+        // Buscamos el jugador. En la solicitud se puede especificar el ID o el nombre por
+        // lo que intentamos buscarlo primero por ID y si no lo encuentra, buscamos por nombre
         if (depositRequest.getUserId() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserId());
-            if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
+            if (otherPlayer == null) {
+                response = ControllerUtils.buildPlayerNotFoundResponse(request);
+            }
         } else if (depositRequest.getUserName() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserName());
-            if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
+            if (otherPlayer == null) {
+                response = ControllerUtils.buildPlayerNotFoundResponse(request);
+            }
         } else {
-            return ControllerUtils.buildPlayerNotFoundResponse(request);
+            response = ControllerUtils.buildPlayerNotFoundResponse(request);
         }
 
+        //Si no se ha encontrado el jugador, la respuesta no es nula por lo que
+        //finalizamos la operación
+        if (response != null) {
+            callEvent(RestEventType.BALANCE_WITHDRAW, depositRequest, response);
+            return response;
+        }
+
+        // Filtramos si la cantidad es válida
         if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount())) return ResponseEntity.status(400).body(
                 new MessageResponse.Builder()
                         .status(HttpStatus.BAD_REQUEST)
@@ -152,7 +191,7 @@ public class BalanceController extends AuthenticatedController {
 
         getPlayerService().savePlayer(otherPlayer);
 
-        return ResponseEntity.ok(
+        response = ResponseEntity.ok(
                 new MessageResponse.Builder()
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
@@ -161,7 +200,9 @@ public class BalanceController extends AuthenticatedController {
                         .payload("type", depositRequest.getType())
                         .payload("updated", value.getValue())
                         .build()
-                );
+        );
+        callEvent(RestEventType.BALANCE_WITHDRAW, otherPlayer, response);
+        return response;
     }
 
     /**
@@ -199,7 +240,7 @@ public class BalanceController extends AuthenticatedController {
                 economyValue.getValue()
         )));
 
-        return ResponseEntity.ok(
+        ResponseEntity<MessageResponse> response = ResponseEntity.ok(
                 new MessageResponse.Builder()
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
@@ -207,6 +248,8 @@ public class BalanceController extends AuthenticatedController {
                         .payload("balances", balances)
                         .build()
         );
+        callEvent(RestEventType.BALANCE_GET, otherPlayer, response);
+        return response;
 
     }
 
