@@ -3,6 +3,7 @@ package es.samfc.learning.backend.controller.player;
 import es.samfc.learning.backend.controller.AuthenticatedController;
 import es.samfc.learning.backend.controller.payload.MessageResponse;
 import es.samfc.learning.backend.model.player.Player;
+import es.samfc.learning.backend.repository.CredentialsRepository;
 import es.samfc.learning.backend.services.impl.PlayerService;
 import es.samfc.learning.backend.utils.controller.ControllerUtils;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,12 +28,15 @@ public class SelfPlayerController extends AuthenticatedController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfPlayerController.class);
 
+    private CredentialsRepository credentialsRepository; //TODO: Hacer esto en un servicio
+
     /**
      * Constructor. Obtiene el servicio de jugadores de la aplicación.
      * @param playerService El servicio de jugadores.
      */
-    public SelfPlayerController(PlayerService playerService) {
+    public SelfPlayerController(PlayerService playerService, CredentialsRepository credentialsRepository) {
         super(playerService);
+        this.credentialsRepository = credentialsRepository;
     }
 
     /**
@@ -56,6 +60,7 @@ public class SelfPlayerController extends AuthenticatedController {
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
                         .payload("player", data)
+                        .payload("email", credentialsRepository.findById(player.getUniqueId()).get().getEmail())
                         .build()
         );
     }
