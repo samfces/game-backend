@@ -5,6 +5,7 @@ import es.samfc.learning.backend.controller.payload.auth.LoginRequest;
 import es.samfc.learning.backend.controller.payload.auth.PasswordChangeRequest;
 import es.samfc.learning.backend.controller.payload.auth.RefreshRequest;
 import es.samfc.learning.backend.controller.payload.auth.RegisterRequest;
+import es.samfc.learning.backend.model.auth.LoginData;
 import es.samfc.learning.backend.model.auth.PlayerCredentials;
 import es.samfc.learning.backend.model.auth.RefreshToken;
 import es.samfc.learning.backend.model.player.Player;
@@ -14,10 +15,12 @@ import es.samfc.learning.backend.repository.RefreshTokenRepository;
 import es.samfc.learning.backend.security.encryption.Encoders;
 import es.samfc.learning.backend.security.jwt.JwtTokenUtil;
 import es.samfc.learning.backend.security.service.UserDetailsServiceImpl;
+import es.samfc.learning.backend.services.impl.PlayerService;
 import es.samfc.learning.backend.utils.password.PasswordChecker;
 import es.samfc.learning.backend.utils.player.PlayerConstructor;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +56,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
     private final PlayerConstructor playerConstructor;
+    private final PlayerService playerService;
 
     //Repositories
     private final PlayerRepository playerRepository;
@@ -71,6 +75,7 @@ public class AuthController {
      * @param userDetailsService Servicio de usuarios
      * @param authenticationManager Gestor de autenticación
      * @param playerConstructor Constructor de jugadores
+     * @param playerConstructor Constructor de jugadores
      * @param playerRepository Repositorio de jugadores
      * @param credentialsRepository Repositorio de credenciales
      * @param jwtTokenUtil Utilidades de token JWT
@@ -80,6 +85,7 @@ public class AuthController {
                           UserDetailsServiceImpl userDetailsService,
                           AuthenticationManager authenticationManager,
                           PlayerConstructor playerConstructor,
+                          PlayerService playerService,
                           PlayerRepository playerRepository,
                           CredentialsRepository credentialsRepository,
                           JwtTokenUtil jwtTokenUtil,
@@ -88,6 +94,7 @@ public class AuthController {
         this.userDetailsService = userDetailsService;
         this.authenticationManager = authenticationManager;
         this.playerConstructor = playerConstructor;
+        this.playerService = playerService;
         this.playerRepository = playerRepository;
         this.credentialsRepository = credentialsRepository;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -108,7 +115,8 @@ public class AuthController {
     public ResponseEntity<MessageResponse> login(
             @RequestBody
             @Parameter(description = "Cuerpo de la solicitud en el que se incluye el nombre de usuario y la contraseña", required = true)
-            LoginRequest login
+            LoginRequest login,
+            HttpServletRequest request
     ) {
         LOGGER.info("POST /api/v1/auth/login");
         Authentication authentication = authenticationManager.authenticate(
@@ -122,6 +130,19 @@ public class AuthController {
 
         RefreshToken refreshToken = RefreshToken.generate(login.getUsername(), new Date(System.currentTimeMillis() + refreshTokenExpirationMs));
         refreshTokenRepository.save(refreshToken);
+
+        Player player = playerService.getPlayer(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (player != null) {
+            LoginData loginData = new LoginData.Builder()
+                    .host(request.getRemoteHost())
+                    .timestamp(new Date())
+                    .player(player)
+                    .build();
+            player.getLoginDatas().add(loginData);
+            playerService.savePlayer(player);
+        }
+
+
 
         return ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)

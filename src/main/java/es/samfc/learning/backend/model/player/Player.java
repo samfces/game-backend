@@ -1,10 +1,11 @@
 package es.samfc.learning.backend.model.player;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import es.samfc.learning.backend.model.auth.LoginData;
 import es.samfc.learning.backend.model.economy.EconomyType;
 import es.samfc.learning.backend.model.economy.EconomyValue;
 import es.samfc.learning.backend.model.permission.BackendPermissions;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,6 +37,9 @@ public class Player {
 
     @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private BackendPermissions backendPermissions;
+
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<LoginData> loginDatas;
 
     /**
      * Constructor vacío para JPA.
@@ -138,6 +142,22 @@ public class Player {
      */
     public void setBackendPermissions(BackendPermissions backendPermissions) {
         this.backendPermissions = backendPermissions;
+    }
+
+    /**
+     * Método para obtener los datos de inicio de sesión del jugador.
+     * @return List<LoginData> Datos de inicio de sesión del jugador.
+     */
+    public List<LoginData> getLoginDatas() {
+        return loginDatas;
+    }
+
+    /**
+     * Método para establecer los datos de inicio de sesión del jugador.
+     * @param loginDatas Datos de inicio de sesión del jugador.
+     */
+    public void setLoginDatas(List<LoginData> loginDatas) {
+        this.loginDatas = loginDatas;
     }
 
     /**
