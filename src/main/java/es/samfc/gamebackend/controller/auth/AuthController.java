@@ -3,7 +3,7 @@ package es.samfc.gamebackend.controller.auth;
 import es.samfc.gamebackend.controller.EventableController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.auth.*;
-import es.samfc.gamebackend.events.auth.AuthLoginEvent;
+import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.auth.LoginData;
 import es.samfc.gamebackend.model.auth.PlayerCredentials;
 import es.samfc.gamebackend.model.auth.RefreshToken;
@@ -156,7 +156,7 @@ public class AuthController extends EventableController {
                 ))
                 .build()
         );
-        getEventProducer().callEvent(new AuthLoginEvent(ok.getBody(), login));
+        callEvent(RestEventType.AUTH_LOGIN, login, ok.getBody());
         return ok;
     }
 
@@ -171,25 +171,32 @@ public class AuthController extends EventableController {
     ) {
         LOGGER.info("POST /api/v1/auth/refresh");
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
+
+        ResponseEntity<MessageResponse> response = null;
+
         if (refreshTokenOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            response = ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/refresh")
                             .payload("message", "No existe un token de refresco para el usuario")
                             .build()
             );
+            callEvent(RestEventType.AUTH_REFRESH, refresh, response.getBody());
+            return response;
         }
 
         RefreshToken refreshToken = refreshTokenOptional.get();
         if (refreshToken.getExpirationDate().before(new Date())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            response = ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/refresh")
                             .payload("message", "El token de refresco ha expirado")
                             .build()
             );
+            callEvent(RestEventType.AUTH_REFRESH, refresh, response.getBody());
+            return response;
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(refreshToken.getUsername());
@@ -200,7 +207,7 @@ public class AuthController extends EventableController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenUtil.generateJwtToken(authentication);
 
-        return ResponseEntity.ok(new MessageResponse.Builder()
+        response = ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/refresh")
                 .payload("message", "Sesión actualizada correctamente")
@@ -210,6 +217,8 @@ public class AuthController extends EventableController {
                 ))
                 .build()
         );
+        callEvent(RestEventType.AUTH_REFRESH, refresh, response.getBody());
+        return response;
     }
 
     @ApiResponse(responseCode = "200", description = "Sesión cerrada correctamente")
@@ -220,16 +229,18 @@ public class AuthController extends EventableController {
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         refreshTokenRepository.findByUsername(userDetails.getUsername()).ifPresent(refreshTokenRepository::delete);
         SecurityContextHolder.clearContext();
-        return ResponseEntity.ok(new MessageResponse.Builder()
+        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/logout")
                 .payload("message", "Sesión cerrada correctamente")
                 .payload("data", Map.of(
-                    "token", "",
-                    "refreshToken", ""
+                        "token", "",
+                        "refreshToken", ""
                 ))
                 .build()
         );
+        callEvent(RestEventType.AUTH_LOGOUT, null, ok.getBody());
+        return ok;
     }
 
     @ApiResponse(responseCode = "201", description = "Usuario creado correctamente")
@@ -242,34 +253,41 @@ public class AuthController extends EventableController {
             RegisterRequest register
     ) {
         LOGGER.info("POST /api/v1/auth/register");
+        ResponseEntity<MessageResponse> response = null;
 
         if (playerRepository.existsByName(register.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+            response = ResponseEntity.status(HttpStatus.CONFLICT).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.CONFLICT)
                             .payload("path", "/api/v1/auth/register")
                             .payload("message", "Usuario ya existente")
                             .build()
             );
+            callEvent(RestEventType.AUTH_REGISTER, register, response.getBody());
+            return response;
         }
 
         if (playerConstructor.buildPlayer(register)) {
-            return ResponseEntity.ok(
+            response = ResponseEntity.ok(
                     new MessageResponse.Builder()
                             .status(HttpStatus.OK)
                             .payload("path", "/api/v1/auth/register")
                             .payload("message", "Registro exitoso")
                             .build()
             );
+            callEvent(RestEventType.AUTH_REGISTER, register, response.getBody());
+            return response;
         }
 
-        return ResponseEntity.internalServerError().body(
+        response = ResponseEntity.internalServerError().body(
                 new MessageResponse.Builder()
                         .status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .payload("path", "/api/v1/auth/register")
                         .payload("message", "Error al registrar el usuario")
                         .build()
         );
+        callEvent(RestEventType.AUTH_REGISTER, register, response.getBody());
+        return response;
     }
 
     @ApiResponse(responseCode = "200", description = "Contraseña actualizada correctamente")
@@ -282,27 +300,32 @@ public class AuthController extends EventableController {
             PasswordChangeRequest passwordChange
     ) {
         LOGGER.info("POST /api/v1/auth/password/change");
+        ResponseEntity<MessageResponse> response = null;
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (!encoders.getPasswordEncoder().matches(passwordChange.getOldPassword(), userDetails.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            response = ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/password/change")
                             .payload("message", "Contraseña actual incorrecta")
                             .build()
             );
+            callEvent(RestEventType.AUTH_PASSWORD_CHANGE, passwordChange, response.getBody());
+            return response;
         }
 
         if (passwordChange.getOldPassword().equals(passwordChange.getNewPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            response = ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", "/api/v1/auth/password/change")
                             .payload("message", "La nueva contraseña no puede ser igual a la actual")
                             .build()
             );
+            callEvent(RestEventType.AUTH_PASSWORD_CHANGE, passwordChange, response.getBody());
+            return response;
         }
 
         int passwordStrength = PasswordChecker.getPasswordStrength(passwordChange.getNewPassword());
@@ -326,11 +349,13 @@ public class AuthController extends EventableController {
 
         refreshTokenRepository.findByUsername(userDetails.getUsername()).ifPresent(refreshTokenRepository::delete);
 
-        return ResponseEntity.ok(new MessageResponse.Builder()
+        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/password/change")
                 .payload("message", "Contraseña actualizada correctamente. Inicia sesión con la nueva contraseña.")
                 .build());
+        callEvent(RestEventType.AUTH_PASSWORD_CHANGE, passwordChange, ok.getBody());
+        return ok;
     }
 
     /**
@@ -355,13 +380,15 @@ public class AuthController extends EventableController {
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (!encoders.getPasswordEncoder().matches(emailChange.getPassword(), userDetails.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ResponseEntity<MessageResponse> response = ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     new MessageResponse.Builder()
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/email/change")
                             .payload("message", "Contraseña actual incorrecta")
                             .build()
             );
+            callEvent(RestEventType.AUTH_EMAIL_CHANGE, emailChange, response.getBody());
+            return response;
         }
 
         Player player = playerService.getPlayer(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -369,11 +396,14 @@ public class AuthController extends EventableController {
         credentials.setEmail(emailChange.getEmail());
         credentialsRepository.save(credentials);
 
-        return ResponseEntity.ok(new MessageResponse.Builder()
+        ResponseEntity<MessageResponse> response = ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/email/change")
                 .payload("message", "Dirección de correo electrónico actualizada correctamente. Inicia sesión con la nueva dirección de correo electrónico.")
                 .build());
+
+        callEvent(RestEventType.AUTH_EMAIL_CHANGE, emailChange, response.getBody());
+        return response;
     }
 
 

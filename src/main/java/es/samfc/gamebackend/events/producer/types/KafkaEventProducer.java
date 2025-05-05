@@ -20,11 +20,6 @@ public class KafkaEventProducer implements EventProducer {
 
     @Override
     public void callEvent(Event event) {
-        kafkaTemplate.send(mainTopic, event).thenAccept(recordMetadata -> {
-            LOGGER.info("Evento {} enviado correctamente", event.getEventType());
-        }).exceptionally(throwable -> {
-            LOGGER.error("Error enviando evento {}", event.getEventType(), throwable);
-            return null;
-        });
+        kafkaTemplate.send(mainTopic, event);
     }
 }
