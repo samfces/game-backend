@@ -1,10 +1,7 @@
 package es.samfc.learning.backend.controller.auth;
 
 import es.samfc.learning.backend.controller.payload.MessageResponse;
-import es.samfc.learning.backend.controller.payload.auth.LoginRequest;
-import es.samfc.learning.backend.controller.payload.auth.PasswordChangeRequest;
-import es.samfc.learning.backend.controller.payload.auth.RefreshRequest;
-import es.samfc.learning.backend.controller.payload.auth.RegisterRequest;
+import es.samfc.learning.backend.controller.payload.auth.*;
 import es.samfc.learning.backend.model.auth.LoginData;
 import es.samfc.learning.backend.model.auth.PlayerCredentials;
 import es.samfc.learning.backend.model.auth.RefreshToken;
@@ -330,6 +327,49 @@ public class AuthController {
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/password/change")
                 .payload("message", "Contraseña actualizada correctamente. Inicia sesión con la nueva contraseña.")
+                .build());
+    }
+
+    /**
+     * Método POST para cambiar la dirección de correo electrónico del jugador.
+     * @param emailChange Cuerpo de la solicitud en el que se incluye la nueva dirección de correo electrónico.
+     * @param request Request HTTP.
+     * @return ResponseEntity<MessageResponse> Respuesta con la dirección de correo electrónico actualizada correctamente.
+     */
+    @PostMapping("/api/v1/auth/email/change")
+    @ApiResponse(responseCode = "200", description = "Dirección de correo electrónico actualizada correctamente")
+    @ApiResponse(responseCode = "400", description = "Dirección de correo electrónico no válida")
+    @ApiResponse(responseCode = "401", description = "No autenticado")
+    @ApiResponse(responseCode = "403", description = "Sin permisos")
+    public ResponseEntity<MessageResponse> changeEmail(
+            @RequestBody
+            @Parameter(description = "Cuerpo de la solicitud en el que se incluye la nueva dirección de correo electrónico", required = true)
+            EmailChangeRequest emailChange,
+            HttpServletRequest request
+    ) {
+        LOGGER.info("POST /api/v1/auth/email/change");
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        if (!encoders.getPasswordEncoder().matches(emailChange.getPassword(), userDetails.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.UNAUTHORIZED)
+                            .payload("path", "/api/v1/auth/email/change")
+                            .payload("message", "Contraseña actual incorrecta")
+                            .build()
+            );
+        }
+
+        Player player = playerService.getPlayer(SecurityContextHolder.getContext().getAuthentication().getName());
+        PlayerCredentials credentials = credentialsRepository.findById(player.getUniqueId()).orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+        credentials.setEmail(emailChange.getEmail());
+        credentialsRepository.save(credentials);
+
+        return ResponseEntity.ok(new MessageResponse.Builder()
+                .status(HttpStatus.OK)
+                .payload("path", "/api/v1/auth/email/change")
+                .payload("message", "Dirección de correo electrónico actualizada correctamente. Inicia sesión con la nueva dirección de correo electrónico.")
                 .build());
     }
 
