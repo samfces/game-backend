@@ -2,6 +2,8 @@ package es.samfc.gamebackend.controller.player;
 
 import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
+import es.samfc.gamebackend.events.RestEventCall;
+import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.player.Player;
 import es.samfc.gamebackend.repository.CredentialsRepository;
 import es.samfc.gamebackend.services.impl.PlayerService;
@@ -49,7 +51,12 @@ public class SelfPlayerController extends AuthenticatedController {
     @GetMapping("/api/v1/self/me")
     public ResponseEntity<MessageResponse> me(HttpServletRequest request) {
         ControllerUtils.logRequest(LOGGER, request);
-        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
+
+        RestEventType eventType = RestEventType.SELF_ME;
+        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, null);
+
+
+        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
 
         Player player = getPlayerService().getPlayer(SecurityContextHolder.getContext().getAuthentication().getName());
         Map<String, Object> data = new HashMap<>();
@@ -61,6 +68,7 @@ public class SelfPlayerController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", data)
                         .payload("email", credentialsRepository.findById(player.getUniqueId()).get().getEmail())
+                        .eventCall(eventCall)
                         .build()
         );
     }
