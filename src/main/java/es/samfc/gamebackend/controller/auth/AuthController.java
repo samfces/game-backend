@@ -16,6 +16,7 @@ import es.samfc.gamebackend.security.encryption.Encoders;
 import es.samfc.gamebackend.security.jwt.JwtTokenUtil;
 import es.samfc.gamebackend.security.service.UserDetailsServiceImpl;
 import es.samfc.gamebackend.services.impl.PlayerService;
+import es.samfc.gamebackend.utils.controller.ControllerUtils;
 import es.samfc.gamebackend.utils.password.PasswordChecker;
 import es.samfc.gamebackend.utils.player.PlayerConstructor;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -118,7 +119,7 @@ public class AuthController extends EventableController {
             LoginRequest login,
             HttpServletRequest request
     ) {
-        LOGGER.info("POST /api/v1/auth/login");
+        ControllerUtils.logRequest(LOGGER, request);
 
         RestEventType eventType = RestEventType.AUTH_LOGIN;
         RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, login);
@@ -173,9 +174,11 @@ public class AuthController extends EventableController {
     public ResponseEntity<MessageResponse> refresh(
             @RequestBody
             @Parameter(description = "Cuerpo de la solicitud en el que se incluye el token de refresco", required = true)
-            RefreshRequest refresh
+            RefreshRequest refresh,
+            HttpServletRequest request
     ) {
-        LOGGER.info("POST /api/v1/auth/refresh");
+        ControllerUtils.logRequest(LOGGER, request);
+
         RestEventType eventType = RestEventType.AUTH_REFRESH;
         RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, refresh);
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
@@ -227,8 +230,8 @@ public class AuthController extends EventableController {
     @ApiResponse(responseCode = "200", description = "Sesión cerrada correctamente")
     @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/logout")
-    public ResponseEntity<MessageResponse> logout() {
-        LOGGER.info("POST /api/v1/auth/logout");
+    public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
+        ControllerUtils.logRequest(LOGGER, request);
 
         RestEventType eventType = RestEventType.AUTH_LOGOUT;
         RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, null);
@@ -256,9 +259,10 @@ public class AuthController extends EventableController {
     public ResponseEntity<MessageResponse> register(
             @RequestBody
             @Parameter(description = "Cuerpo de la solicitud en el que se incluye el nombre del usuario y la contraseña", required = true)
-            RegisterRequest register
+            RegisterRequest register,
+            HttpServletRequest request
     ) {
-        LOGGER.info("POST /api/v1/auth/register");
+        ControllerUtils.logRequest(LOGGER, request);
         RestEventType eventType = RestEventType.AUTH_REGISTER;
         RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, register);
 
@@ -301,9 +305,10 @@ public class AuthController extends EventableController {
     public ResponseEntity<MessageResponse> changePassword(
             @RequestBody
             @Parameter(description = "Cuerpo de la solicitud en el que se incluye la contraseña actual y la nueva contraseña", required = true)
-            PasswordChangeRequest passwordChange
+            PasswordChangeRequest passwordChange,
+            HttpServletRequest request
     ) {
-        LOGGER.info("POST /api/v1/auth/password/change");
+        ControllerUtils.logRequest(LOGGER, request);
 
         RestEventType eventType = RestEventType.AUTH_PASSWORD_CHANGE;
         RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, passwordChange);
@@ -374,9 +379,10 @@ public class AuthController extends EventableController {
     public ResponseEntity<MessageResponse> changeEmail(
             @RequestBody
             @Parameter(description = "Cuerpo de la solicitud en el que se incluye la nueva dirección de correo electrónico", required = true)
-            EmailChangeRequest emailChange
+            EmailChangeRequest emailChange,
+            HttpServletRequest request
     ) {
-        LOGGER.info("POST /api/v1/auth/email/change");
+        ControllerUtils.logRequest(LOGGER, request);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         RestEventType eventType = RestEventType.AUTH_EMAIL_CHANGE;
