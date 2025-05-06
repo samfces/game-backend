@@ -2,6 +2,7 @@ package es.samfc.gamebackend.controller.auth;
 
 import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
+import es.samfc.gamebackend.events.RestEventCall;
 import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.player.Player;
 import es.samfc.gamebackend.services.impl.PlayerService;
@@ -39,22 +40,27 @@ public class AuthLogController extends AuthenticatedController {
     @ApiResponse(responseCode = "200", description = "Datos de inicio de sesión obtenidos correctamente")
     @ApiResponse(responseCode = "401", description = "No autenticado")
     public ResponseEntity<MessageResponse> log(HttpServletRequest request) {
+        RestEventType eventType = RestEventType.AUTH_LOG;
         ControllerUtils.logRequest(LOGGER, request);
-        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
+
+        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
         Optional<Player> player = getPlayerFromContext();
-        if (player.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request);
+        if (player.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
 
         int limit = 10; //TODO: Make this configurable
 
-        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(new MessageResponse.Builder()
+        return ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/log")
                 .payload("message", "Datos de inicio de sesión obtenidos correctamente")
                 .payload("data", player.get().getLoginDatas().subList(0, Math.min(limit, player.get().getLoginDatas().size())))
+                .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
+                        .requestData(null)
+                        .eventType(eventType)
+                        .controller(this)
+                        .build()
+                )
                 .build()
         );
-        callEvent(RestEventType.AUTH_LOG, null, ok);
-        return ok;
-
     }
 }

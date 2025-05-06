@@ -24,6 +24,14 @@ public class RestEvent<T, R> extends Event {
         return responseData;
     }
 
+    public void setRequestData(T requestData) {
+        this.requestData = requestData;
+    }
+
+    public void setResponseData(R responseData) {
+        this.responseData = responseData;
+    }
+
     public RestEventType getEventType() {
         return eventType;
     }

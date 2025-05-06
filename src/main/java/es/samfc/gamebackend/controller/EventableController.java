@@ -1,5 +1,6 @@
 package es.samfc.gamebackend.controller;
 
+import es.samfc.gamebackend.events.Event;
 import es.samfc.gamebackend.events.producer.EventProducer;
 import es.samfc.gamebackend.events.rest.RestEvent;
 import es.samfc.gamebackend.events.rest.RestEventType;
@@ -16,11 +17,15 @@ public class EventableController {
     }
 
     public void callEvent(RestEventType type, Object requestData, Object responseData) {
-        getEventProducer().callEvent(new RestEvent.Builder<>()
+        callEvent(new RestEvent.Builder<>()
                 .eventType(type)
                 .requestData(requestData)
                 .responseData(responseData)
                 .build()
         );
+    }
+
+    public void callEvent(Event event) {
+        getEventProducer().callEvent(event);
     }
 }
