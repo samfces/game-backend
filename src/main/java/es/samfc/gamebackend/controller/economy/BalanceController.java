@@ -38,8 +38,9 @@ public class BalanceController extends AuthenticatedController {
 
     /**
      * Constructor. Obtiene el servicio de economías de la aplicación.
+     *
      * @param economiesService El servicio de economías.
-     * @param playerService El servicio de jugadores.
+     * @param playerService    El servicio de jugadores.
      */
     public BalanceController(EconomiesService economiesService, PlayerService playerService) {
         super(playerService);
@@ -48,8 +49,9 @@ public class BalanceController extends AuthenticatedController {
 
     /**
      * Método POST para depositar dinero en un jugador.
+     *
      * @param depositRequest Cuerpo de la solicitud en el que se incluyen los datos de la transacción.
-     * @param request Request HTTP.
+     * @param request        Request HTTP.
      * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
      */
     @ApiResponse(responseCode = "200", description = "Depósito realizado correctamente")
@@ -81,21 +83,17 @@ public class BalanceController extends AuthenticatedController {
         }
         if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
 
+        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, depositRequest);
 
-        if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount())){
-             return ResponseEntity.status(400).body(
-                     new MessageResponse.Builder()
-                             .status(HttpStatus.BAD_REQUEST)
-                             .payload("path", request.getRequestURI())
-                             .payload("message", "Cantidad no válida")
-                             .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
-                                     .requestData(depositRequest)
-                                     .eventType(eventType)
-                                     .controller(this)
-                                     .build()
-                             )
-                             .build()
-             );
+        if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount())) {
+            return ResponseEntity.status(400).body(
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .payload("path", request.getRequestURI())
+                            .payload("message", "Cantidad no válida")
+                            .eventCall(eventCall)
+                            .build()
+            );
         }
 
         EconomyType type = economiesService.getEconomyType(depositRequest.getType());
@@ -112,20 +110,16 @@ public class BalanceController extends AuthenticatedController {
                         .payload("amount", depositRequest.getAmount())
                         .payload("type", depositRequest.getType())
                         .payload("updated", value.getValue())
-                        .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
-                                .requestData(depositRequest)
-                                .eventType(eventType)
-                                .controller(this)
-                                .build()
-                        )
+                        .eventCall(eventCall)
                         .build()
         );
     }
 
     /**
      * Método POST para retirar dinero de un jugador.
+     *
      * @param depositRequest Cuerpo de la solicitud en el que se incluyen los datos de la transacción.
-     * @param request Request HTTP.
+     * @param request        Request HTTP.
      * @return ResponseEntity<MessageResponse> Respuesta con el resultado de la operación.
      */
     @ApiResponse(responseCode = "200", description = "Retiro realizado correctamente")
@@ -158,20 +152,21 @@ public class BalanceController extends AuthenticatedController {
         if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
 
         // Filtramos si la cantidad es válida
+        RestEventCall<Object, MessageResponse> eventCall = new RestEventCall.Builder<Object, MessageResponse>()
+                .requestData(depositRequest)
+                .eventType(eventType)
+                .controller(this)
+                .build();
+
         if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount()))
             return ResponseEntity.status(400).body(
-                new MessageResponse.Builder()
-                        .status(HttpStatus.BAD_REQUEST)
-                        .payload("path", request.getRequestURI())
-                        .payload("message", "Cantidad no válida")
-                        .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
-                                .requestData(depositRequest)
-                                .eventType(eventType)
-                                .controller(this)
-                                .build()
-                        )
-                        .build()
-        );
+                    new MessageResponse.Builder()
+                            .status(HttpStatus.BAD_REQUEST)
+                            .payload("path", request.getRequestURI())
+                            .payload("message", "Cantidad no válida")
+                            .eventCall(eventCall)
+                            .build()
+            );
 
         EconomyType type = economiesService.getEconomyType(depositRequest.getType());
         EconomyValue value = otherPlayer.getEconomy(type);
@@ -187,20 +182,16 @@ public class BalanceController extends AuthenticatedController {
                         .payload("amount", depositRequest.getAmount())
                         .payload("type", depositRequest.getType())
                         .payload("updated", value.getValue())
-                        .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
-                                .requestData(depositRequest)
-                                .eventType(eventType)
-                                .controller(this)
-                                .build()
-                        )
+                        .eventCall(eventCall)
                         .build()
         );
     }
 
     /**
      * Método GET para obtener el balance de un jugador.
+     *
      * @param otherPlayerIdOrName ID o nombre del jugador.
-     * @param request Request HTTP.
+     * @param request             Request HTTP.
      * @return ResponseEntity<MessageResponse> Respuesta con el balance del jugador.
      */
     @ApiResponse(responseCode = "200", description = "Balance obtenido correctamente")
@@ -243,12 +234,7 @@ public class BalanceController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", otherPlayer.getUniqueId())
                         .payload("balances", balances)
-                        .eventCall(new RestEventCall.Builder<Object, MessageResponse>()
-                                .requestData(otherPlayer)
-                                .eventType(eventType)
-                                .controller(this)
-                                .build()
-                        )
+                        .eventCall(generateEventCall(eventType, otherPlayer))
                         .build()
         );
     }
