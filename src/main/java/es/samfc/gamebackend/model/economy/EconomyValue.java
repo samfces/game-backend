@@ -1,7 +1,8 @@
 package es.samfc.gamebackend.model.economy;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import es.samfc.gamebackend.model.player.Player;
+import jakarta.persistence.*;
 
 /**
  * Modelo de valor de una economía.
@@ -22,6 +23,7 @@ public class EconomyValue {
 
     @ManyToOne
     @JoinColumn(name = "player", nullable = false, referencedColumnName = "player_id")
+    @JsonBackReference
     private Player player;
 
     /**

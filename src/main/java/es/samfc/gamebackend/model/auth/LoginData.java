@@ -1,6 +1,7 @@
 package es.samfc.gamebackend.model.auth;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import es.samfc.gamebackend.model.player.Player;
 import jakarta.persistence.*;
 
@@ -18,6 +19,7 @@ public class LoginData {
 
     @ManyToOne
     @JoinColumn(name = "player_id", nullable = false, referencedColumnName = "player_id")
+    @JsonBackReference
     private Player player;
 
     public LoginData() {

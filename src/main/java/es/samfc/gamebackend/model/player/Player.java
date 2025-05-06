@@ -1,6 +1,7 @@
 package es.samfc.gamebackend.model.player;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import es.samfc.gamebackend.model.auth.LoginData;
 import es.samfc.gamebackend.model.economy.EconomyType;
 import es.samfc.gamebackend.model.economy.EconomyValue;
@@ -33,12 +34,15 @@ public class Player {
     protected Date updatedAt;
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
     private List<EconomyValue> economies;
 
     @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
     private BackendPermissions backendPermissions;
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<LoginData> loginDatas;
 
     /**

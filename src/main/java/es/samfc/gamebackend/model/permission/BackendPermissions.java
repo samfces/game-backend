@@ -1,5 +1,6 @@
 package es.samfc.gamebackend.model.permission;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import es.samfc.gamebackend.model.player.Player;
@@ -23,6 +24,7 @@ public class BackendPermissions {
 
     @OneToOne
     @JoinColumn(name = "player", nullable = false, referencedColumnName = "player_id")
+    @JsonBackReference
     private Player player;
 
     /**
