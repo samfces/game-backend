@@ -1,6 +1,5 @@
 package es.samfc.gamebackend.controller.payload;
 
-import es.samfc.gamebackend.events.RestEventCall;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.http.HttpStatus;
 
@@ -42,7 +41,6 @@ public class MessageResponse {
 
         private HttpStatus status;
         private final Map<String, Object> payload = new HashMap<>();
-        private RestEventCall<Object, MessageResponse> eventCall;
 
         public Builder status(HttpStatus status) {
             this.status = status;
@@ -59,18 +57,8 @@ public class MessageResponse {
             return this;
         }
 
-        public Builder eventCall(RestEventCall<Object, MessageResponse> eventCall) {
-            this.eventCall = eventCall;
-            return this;
-        }
-
         public MessageResponse build() {
-            MessageResponse messageResponse = new MessageResponse(status.value(), payload);
-            if (eventCall != null) {
-                eventCall.setResponseData(messageResponse);
-                eventCall.callEvent();
-            }
-            return messageResponse;
+            return new MessageResponse(status.value(), payload);
         }
 
     }

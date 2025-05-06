@@ -3,8 +3,6 @@ package es.samfc.gamebackend.controller.economy;
 import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.economy.EconomyDeleteRequest;
-import es.samfc.gamebackend.events.RestEventCall;
-import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.economy.EconomyType;
 import es.samfc.gamebackend.model.economy.EconomyValue;
 import es.samfc.gamebackend.model.permission.BackendPermissionType;
@@ -61,25 +59,20 @@ public class EconomyController extends AuthenticatedController {
             EconomyType economyType,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.ECONOMY_CREATE;
-        ControllerUtils.logRequest(LOGGER, request);
 
-        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+        if (!isAuthenticated()) return ControllerUtils.buildUnauthorizedResponse(request);
         Optional<Player> optionalPlayer = getPlayerFromContext();
-        if (optionalPlayer.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+        if (optionalPlayer.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request);
         Player player = optionalPlayer.get();
         if (!hasPermission(BackendPermissionType.CREATE_ECONOMIES)){
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
-
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, economyType);
 
         if (economyType == null) return ResponseEntity.status(400).body(
                 new MessageResponse.Builder()
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "Tipo de economia no válido")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -88,7 +81,6 @@ public class EconomyController extends AuthenticatedController {
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "Nombre o plural del tipo de economia no válido")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -97,7 +89,6 @@ public class EconomyController extends AuthenticatedController {
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "Ya existe una economia de ese tipo")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -121,7 +112,6 @@ public class EconomyController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", player.getUniqueId())
                         .payload("type", economyType)
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -143,21 +133,16 @@ public class EconomyController extends AuthenticatedController {
             EconomyType economyType,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.ECONOMY_EDIT;
-        ControllerUtils.logRequest(LOGGER, request);
 
-        if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+        if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
         if (!hasPermission(BackendPermissionType.EDIT_ECONOMIES))
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
-
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, economyType);
+            return ControllerUtils.buildForbiddenResponse(request);
 
         if (economyType == null) return ResponseEntity.status(400).body(
                 new MessageResponse.Builder()
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "Tipo de economia no válido")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -166,7 +151,6 @@ public class EconomyController extends AuthenticatedController {
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "Edición vacía")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -176,7 +160,6 @@ public class EconomyController extends AuthenticatedController {
                         .status(HttpStatus.BAD_REQUEST)
                         .payload("path", request.getRequestURI())
                         .payload("message", "No existe una economia de ese tipo")
-                        .eventCall(eventCall)
                         .build()
         );
 
@@ -189,7 +172,6 @@ public class EconomyController extends AuthenticatedController {
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
                         .payload("type", economyType)
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -211,12 +193,10 @@ public class EconomyController extends AuthenticatedController {
             EconomyDeleteRequest economyDeleteRequest,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.ECONOMY_DELETE;
-        ControllerUtils.logRequest(LOGGER, request);
 
-        if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+        if (!isAuthenticated() || !isPlayerPresent()) return ControllerUtils.buildUnauthorizedResponse(request);
         if (!hasPermission(BackendPermissionType.DELETE_ECONOMIES))
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
 
         List<Player> players = (List<Player>) getPlayerService().getPlayers();
         for (Player p : players) {
@@ -229,7 +209,6 @@ public class EconomyController extends AuthenticatedController {
                 new MessageResponse.Builder()
                         .status(HttpStatus.OK)
                         .payload("path", request.getRequestURI())
-                        .eventCall(generateEventCall(eventType, economyDeleteRequest))
                         .build()
         );
     }

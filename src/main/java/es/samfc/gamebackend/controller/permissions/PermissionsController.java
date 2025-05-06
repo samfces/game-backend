@@ -3,8 +3,6 @@ package es.samfc.gamebackend.controller.permissions;
 import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.permissions.PermissionsPayload;
-import es.samfc.gamebackend.events.RestEventCall;
-import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.permission.BackendPermissionType;
 import es.samfc.gamebackend.model.player.Player;
 import es.samfc.gamebackend.services.impl.PlayerService;
@@ -53,14 +51,11 @@ public class PermissionsController extends AuthenticatedController {
             String otherPlayerIdOrName,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(logger, request);
 
-        RestEventType eventType = RestEventType.PERMISSIONS_GET;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, otherPlayerIdOrName);
         Optional<Player> player = getPlayerFromContext();
 
         if (!isAuthenticated() || player.isEmpty() || !hasPermission(BackendPermissionType.VIEW_PERMISSIONS)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
 
@@ -76,7 +71,7 @@ public class PermissionsController extends AuthenticatedController {
             }
         }
 
-        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
+        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
 
         Map<String, Object> permissions = new HashMap<>();
         permissions.put("value", otherPlayer.getBackendPermissions().getPermissions());
@@ -88,7 +83,6 @@ public class PermissionsController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", otherPlayer.getUniqueId())
                         .payload("permissions", permissions)
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -110,19 +104,16 @@ public class PermissionsController extends AuthenticatedController {
             PermissionsPayload permissionsPayload,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(logger, request);
 
-        RestEventType eventType = RestEventType.PERMISSIONS_ADD;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, permissionsPayload);
         Optional<Player> player = getPlayerFromContext();
 
 
         if (!isAuthenticated() || player.isEmpty() || !hasPermission(BackendPermissionType.ADD_PERMISSIONS)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
         Player otherPlayer = getPlayerByUUIDorName(permissionsPayload.getPlayer());
-        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
+        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
 
         List<BackendPermissionType> permissionsList = permissionsPayload.getList();
         if (permissionsList == null || permissionsList.isEmpty()) {
@@ -132,7 +123,6 @@ public class PermissionsController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Permisos no válidos")
-                            .eventCall(eventCall)
                             .build()
             );
 
@@ -142,7 +132,6 @@ public class PermissionsController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Permisos no válidos")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -161,7 +150,6 @@ public class PermissionsController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", otherPlayer.getUniqueId())
                         .payload("permissions", permissions)
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -183,18 +171,15 @@ public class PermissionsController extends AuthenticatedController {
             PermissionsPayload permissionsPayload,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(logger, request);
 
-        RestEventType eventType = RestEventType.PERMISSIONS_DELETE;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, permissionsPayload);
         Optional<Player> player = getPlayerFromContext();
 
         if (!isAuthenticated() || player.isEmpty() || !hasPermission(BackendPermissionType.DELETE_PERMISSIONS)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
         Player otherPlayer = getPlayerByUUIDorName(permissionsPayload.getPlayer());
-        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
+        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
 
         List<BackendPermissionType> permissionsList = permissionsPayload.getList();
         if (permissionsList == null || permissionsList.isEmpty()) {
@@ -204,7 +189,6 @@ public class PermissionsController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Permisos no válidos")
-                            .eventCall(eventCall)
                             .build()
             );
 
@@ -214,7 +198,6 @@ public class PermissionsController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Permisos no válidos")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -233,7 +216,6 @@ public class PermissionsController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", otherPlayer.getUniqueId())
                         .payload("permissions", permissions)
-                        .eventCall(eventCall)
                         .build()
         );
     }

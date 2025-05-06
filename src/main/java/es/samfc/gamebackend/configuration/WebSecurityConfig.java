@@ -1,5 +1,7 @@
 package es.samfc.gamebackend.configuration;
 
+import es.samfc.gamebackend.events.filter.PostEventCallingFilter;
+import es.samfc.gamebackend.events.filter.PreEventCallingFilter;
 import es.samfc.gamebackend.security.encryption.Encoders;
 import es.samfc.gamebackend.security.handling.CustomAccessDeniedHandler;
 import es.samfc.gamebackend.security.jwt.JwtRequestFilter;
@@ -29,6 +31,8 @@ public class WebSecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final PreEventCallingFilter preEventCallingFilter;
+    private final PostEventCallingFilter postEventCallingFilter;
 
     private static final String[] WHITELIST = {
             // Authentication
@@ -43,11 +47,15 @@ public class WebSecurityConfig {
             "/favicon.ico"
     };
 
-    public WebSecurityConfig(JwtRequestFilter jwtRequestFilter,
-                             CustomAccessDeniedHandler accessDeniedHandler
+    public WebSecurityConfig(
+            JwtRequestFilter jwtRequestFilter,
+            CustomAccessDeniedHandler accessDeniedHandler, PreEventCallingFilter preEventCallingFilter,
+            PostEventCallingFilter postEventCallingFilter
     ) {
         this.jwtRequestFilter = jwtRequestFilter;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.preEventCallingFilter = preEventCallingFilter;
+        this.postEventCallingFilter = postEventCallingFilter;
     }
 
     @Bean
@@ -62,6 +70,8 @@ public class WebSecurityConfig {
                     .accessDeniedHandler(accessDeniedHandler)
             )
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(preEventCallingFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(postEventCallingFilter, UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();

@@ -1,10 +1,7 @@
 package es.samfc.gamebackend.controller.auth;
 
-import es.samfc.gamebackend.controller.EventableController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.auth.*;
-import es.samfc.gamebackend.events.RestEventCall;
-import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.auth.LoginData;
 import es.samfc.gamebackend.model.auth.PlayerCredentials;
 import es.samfc.gamebackend.model.auth.RefreshToken;
@@ -48,7 +45,7 @@ import java.util.Optional;
  */
 
 @RestController
-public class AuthController extends EventableController {
+public class AuthController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
@@ -119,11 +116,6 @@ public class AuthController extends EventableController {
             LoginRequest login,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(LOGGER, request);
-
-        RestEventType eventType = RestEventType.AUTH_LOGIN;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, login);
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword())
         );
@@ -148,7 +140,7 @@ public class AuthController extends EventableController {
         }
 
 
-        ResponseEntity<MessageResponse> ok = ResponseEntity.ok(new MessageResponse.Builder()
+        return ResponseEntity.ok(new MessageResponse.Builder()
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/login")
                 .payload("message", "Sesión iniciada correctamente")
@@ -160,11 +152,8 @@ public class AuthController extends EventableController {
                                 "expiration", new Date(System.currentTimeMillis() + refreshTokenExpirationMs)
                         )
                 ))
-                .eventCall(eventCall)
                 .build()
         );
-        callEvent(RestEventType.AUTH_LOGIN, login, ok.getBody());
-        return ok;
     }
 
     @ApiResponse(responseCode = "200", description = "Token de refresco actualizado correctamente")
@@ -177,10 +166,6 @@ public class AuthController extends EventableController {
             RefreshRequest refresh,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(LOGGER, request);
-
-        RestEventType eventType = RestEventType.AUTH_REFRESH;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, refresh);
         Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refresh.getRefreshToken());
 
         if (refreshTokenOptional.isEmpty()) {
@@ -189,7 +174,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/refresh")
                             .payload("message", "No existe un token de refresco para el usuario")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -201,7 +185,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/refresh")
                             .payload("message", "El token de refresco ha expirado")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -222,7 +205,6 @@ public class AuthController extends EventableController {
                     "token", jwt,
                     "refreshToken", new Date(System.currentTimeMillis() + jwtExpirationMs)
                 ))
-                .eventCall(eventCall)
                 .build()
         );
     }
@@ -231,10 +213,7 @@ public class AuthController extends EventableController {
     @ApiResponse(responseCode = "401", description = "No autenticado")
     @PostMapping("/api/v1/auth/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
-        ControllerUtils.logRequest(LOGGER, request);
 
-        RestEventType eventType = RestEventType.AUTH_LOGOUT;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, null);
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
         refreshTokenRepository.findByUsername(userDetails.getUsername()).ifPresent(refreshTokenRepository::delete);
@@ -247,7 +226,6 @@ public class AuthController extends EventableController {
                         "token", "",
                         "refreshToken", ""
                 ))
-                .eventCall(eventCall)
                 .build()
         );
     }
@@ -262,9 +240,6 @@ public class AuthController extends EventableController {
             RegisterRequest register,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(LOGGER, request);
-        RestEventType eventType = RestEventType.AUTH_REGISTER;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, register);
 
         if (playerRepository.existsByName(register.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -272,7 +247,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.CONFLICT)
                             .payload("path", "/api/v1/auth/register")
                             .payload("message", "Usuario ya existente")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -283,7 +257,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.OK)
                             .payload("path", "/api/v1/auth/register")
                             .payload("message", "Registro exitoso")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -293,7 +266,6 @@ public class AuthController extends EventableController {
                         .status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .payload("path", "/api/v1/auth/register")
                         .payload("message", "Error al registrar el usuario")
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -308,10 +280,7 @@ public class AuthController extends EventableController {
             PasswordChangeRequest passwordChange,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(LOGGER, request);
 
-        RestEventType eventType = RestEventType.AUTH_PASSWORD_CHANGE;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, passwordChange);
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (!encoders.getPasswordEncoder().matches(passwordChange.getOldPassword(), userDetails.getPassword())) {
@@ -320,7 +289,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/password/change")
                             .payload("message", "Contraseña actual incorrecta")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -331,7 +299,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", "/api/v1/auth/password/change")
                             .payload("message", "La nueva contraseña no puede ser igual a la actual")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -344,7 +311,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", "/api/v1/auth/password/change")
                             .payload("message", "La nueva contraseña no es segura")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -362,7 +328,6 @@ public class AuthController extends EventableController {
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/password/change")
                 .payload("message", "Contraseña actualizada correctamente. Inicia sesión con la nueva contraseña.")
-                .eventCall(eventCall)
                 .build());
     }
 
@@ -382,11 +347,8 @@ public class AuthController extends EventableController {
             EmailChangeRequest emailChange,
             HttpServletRequest request
     ) {
-        ControllerUtils.logRequest(LOGGER, request);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        RestEventType eventType = RestEventType.AUTH_EMAIL_CHANGE;
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, emailChange);
 
         if (!encoders.getPasswordEncoder().matches(emailChange.getPassword(), userDetails.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -394,7 +356,6 @@ public class AuthController extends EventableController {
                             .status(HttpStatus.UNAUTHORIZED)
                             .payload("path", "/api/v1/auth/email/change")
                             .payload("message", "Contraseña actual incorrecta")
-                            .eventCall(eventCall)
                             .build()
             );
         }
@@ -408,7 +369,6 @@ public class AuthController extends EventableController {
                 .status(HttpStatus.OK)
                 .payload("path", "/api/v1/auth/email/change")
                 .payload("message", "Dirección de correo electrónico actualizada correctamente. Inicia sesión con la nueva dirección de correo electrónico.")
-                .eventCall(eventCall)
                 .build());
     }
 

@@ -13,7 +13,7 @@ import java.util.UUID;
  * Super clase para controladores que requieren autenticación.
  */
 @RestController
-public class AuthenticatedController extends EventableController {
+public class AuthenticatedController {
 
     private final PlayerService playerService;
 

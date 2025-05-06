@@ -4,8 +4,6 @@ import es.samfc.gamebackend.controller.AuthenticatedController;
 import es.samfc.gamebackend.controller.payload.MessageResponse;
 import es.samfc.gamebackend.controller.payload.economy.BalanceData;
 import es.samfc.gamebackend.controller.payload.economy.DepositRequest;
-import es.samfc.gamebackend.events.RestEventCall;
-import es.samfc.gamebackend.events.rest.RestEventType;
 import es.samfc.gamebackend.model.economy.EconomyType;
 import es.samfc.gamebackend.model.economy.EconomyValue;
 import es.samfc.gamebackend.model.permission.BackendPermissionType;
@@ -65,14 +63,12 @@ public class BalanceController extends AuthenticatedController {
             DepositRequest depositRequest,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.BALANCE_DEPOSIT;
-        ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) {
-            return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+            return ControllerUtils.buildUnauthorizedResponse(request);
         }
         if (!hasPermission(BackendPermissionType.EDIT_OTHERS_BALANCE)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
         Player otherPlayer = null;
@@ -81,9 +77,7 @@ public class BalanceController extends AuthenticatedController {
         } else if (depositRequest.getUserName() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserName());
         }
-        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
-
-        RestEventCall<Object, MessageResponse> eventCall = generateEventCall(eventType, depositRequest);
+        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
 
         if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount())) {
             return ResponseEntity.status(400).body(
@@ -91,7 +85,7 @@ public class BalanceController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Cantidad no válida")
-                            .eventCall(eventCall)
+                            
                             .build()
             );
         }
@@ -110,7 +104,6 @@ public class BalanceController extends AuthenticatedController {
                         .payload("amount", depositRequest.getAmount())
                         .payload("type", depositRequest.getType())
                         .payload("updated", value.getValue())
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -133,14 +126,12 @@ public class BalanceController extends AuthenticatedController {
             DepositRequest depositRequest,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.BALANCE_WITHDRAW;
-        ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) {
-            return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+            return ControllerUtils.buildUnauthorizedResponse(request);
         }
         if (!hasPermission(BackendPermissionType.EDIT_OTHERS_BALANCE)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
         Player otherPlayer = null;
@@ -149,14 +140,7 @@ public class BalanceController extends AuthenticatedController {
         } else if (depositRequest.getUserName() != null) {
             otherPlayer = getPlayerService().getPlayer(depositRequest.getUserName());
         }
-        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request, this, eventType);
-
-        // Filtramos si la cantidad es válida
-        RestEventCall<Object, MessageResponse> eventCall = new RestEventCall.Builder<Object, MessageResponse>()
-                .requestData(depositRequest)
-                .eventType(eventType)
-                .controller(this)
-                .build();
+        if (otherPlayer == null) return ControllerUtils.buildPlayerNotFoundResponse(request);
 
         if (depositRequest.getAmount() < 0 || Double.isNaN(depositRequest.getAmount()))
             return ResponseEntity.status(400).body(
@@ -164,7 +148,7 @@ public class BalanceController extends AuthenticatedController {
                             .status(HttpStatus.BAD_REQUEST)
                             .payload("path", request.getRequestURI())
                             .payload("message", "Cantidad no válida")
-                            .eventCall(eventCall)
+                            
                             .build()
             );
 
@@ -182,7 +166,6 @@ public class BalanceController extends AuthenticatedController {
                         .payload("amount", depositRequest.getAmount())
                         .payload("type", depositRequest.getType())
                         .payload("updated", value.getValue())
-                        .eventCall(eventCall)
                         .build()
         );
     }
@@ -205,20 +188,18 @@ public class BalanceController extends AuthenticatedController {
             String otherPlayerIdOrName,
             HttpServletRequest request
     ) {
-        RestEventType eventType = RestEventType.BALANCE_GET;
-        ControllerUtils.logRequest(logger, request);
 
         if (!isAuthenticated() || !isPlayerPresent()) {
-            return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+            return ControllerUtils.buildUnauthorizedResponse(request);
         }
         if (!hasPermission(BackendPermissionType.VIEW_OTHERS_BALANCE)) {
-            return ControllerUtils.buildForbiddenResponse(request, this, eventType);
+            return ControllerUtils.buildForbiddenResponse(request);
         }
 
         Player otherPlayer = getPlayerByUUIDorName(otherPlayerIdOrName);
         if (otherPlayer == null) {
             Optional<Player> player = getPlayerFromContext();
-            if (player.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request, this, eventType);
+            if (player.isEmpty()) return ControllerUtils.buildUnauthorizedResponse(request);
             otherPlayer = player.get();
         }
 
@@ -234,7 +215,6 @@ public class BalanceController extends AuthenticatedController {
                         .payload("path", request.getRequestURI())
                         .payload("player", otherPlayer.getUniqueId())
                         .payload("balances", balances)
-                        .eventCall(generateEventCall(eventType, otherPlayer))
                         .build()
         );
     }

@@ -1,14 +1,14 @@
-package es.samfc.gamebackend.events.rest;
+package es.samfc.gamebackend.events.types;
 
 import es.samfc.gamebackend.events.Event;
 
 public class RestEvent<T, R> extends Event {
 
-    private RestEventType eventType;
+    private RestRequestType eventType;
     private T requestData;
     private R responseData;
 
-    protected RestEvent(RestEventType eventType, R responseData, T requestData) {
+    protected RestEvent(RestRequestType eventType, R responseData, T requestData) {
         this.eventType = eventType;
         this.responseData = responseData;
         this.requestData = requestData;
@@ -32,7 +32,7 @@ public class RestEvent<T, R> extends Event {
         this.responseData = responseData;
     }
 
-    public RestEventType getEventType() {
+    public RestRequestType getEventType() {
         return eventType;
     }
 
@@ -50,7 +50,7 @@ public class RestEvent<T, R> extends Event {
             return this;
         }
 
-        public Builder<T, R> eventType(RestEventType eventType) {
+        public Builder<T, R> eventType(RestRequestType eventType) {
             this.event.eventType = eventType;
             return this;
         }
