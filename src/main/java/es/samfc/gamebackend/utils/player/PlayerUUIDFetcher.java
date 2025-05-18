@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public class PlayerUUIDFetcher {
 
-    private PlayerUUIDFetcher() {
+    PlayerUUIDFetcher() {
         throw new IllegalStateException("No puede instanciarse PlayerUUIDFetcher");
     }
 
@@ -22,6 +22,7 @@ public class PlayerUUIDFetcher {
      * @return Optional<UUID> ID del jugador.
      */
     public static Optional<UUID> getUUID(String nombreUsuario) {
+        if (nombreUsuario == null) return Optional.empty();
         try {
             URL url = new URL("https://playerdb.co/api/player/minecraft/" + nombreUsuario);
             HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
@@ -29,6 +30,8 @@ public class PlayerUUIDFetcher {
             conexion.setRequestProperty("User-Agent", "JavaApp");
 
             int responseCode = conexion.getResponseCode();
+            //Si el jugador no existe, la API devuelve 400 Bad Request
+            if (responseCode == 400) return generateOfflineUUID(nombreUsuario);
             if (responseCode != 200) return Optional.empty();
 
             BufferedReader in = new BufferedReader(new InputStreamReader(conexion.getInputStream()));
@@ -42,14 +45,8 @@ public class PlayerUUIDFetcher {
             in.close();
             String json = respuesta.toString();
 
-            // Comprobamos si el usuario fue encontrado
-            if (json.contains("\"success\":false")) {
-                return Optional.empty();
-            }
-
             // Buscamos el campo "id" dentro de "player"
             int idIndex = json.indexOf("\"id\":\"");
-            if (idIndex == -1) return Optional.empty();
 
             int start = idIndex + 6;
             int end = json.indexOf("\"", start);
@@ -58,6 +55,11 @@ public class PlayerUUIDFetcher {
         } catch (Exception e) {
             return Optional.empty();
         }
+    }
+
+    private static Optional<UUID> generateOfflineUUID(String username) {
+        String uuidString = "OfflinePlayer:" + username;
+        return Optional.of(UUID.nameUUIDFromBytes(uuidString.getBytes()));
     }
 
 }
