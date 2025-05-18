@@ -5,7 +5,7 @@ package es.samfc.gamebackend.utils.password;
  */
 public class PasswordChecker {
 
-    private PasswordChecker() {
+    PasswordChecker() {
         throw new IllegalStateException("Illegal constructor");
     }
 
@@ -15,6 +15,7 @@ public class PasswordChecker {
      * @return int Seguridad de la contraseña.
      */
     public static int getPasswordStrength(String password) {
+        if (password == null) return 0;
         int strength = 0;
 
         //Comprobamos si la contraseña es de al menos 8 caracteres
@@ -34,18 +35,10 @@ public class PasswordChecker {
 
         for (int i = 0; i < password.length(); i++) {
             char c = password.charAt(i);
-            if (Character.isLowerCase(c)) {
-                hasLowerCase = true;
-            }
-            if (Character.isUpperCase(c)) {
-                hasUpperCase = true;
-            }
-            if (Character.isDigit(c)) {
-                hasDigit = true;
-            }
-            if (Character.isLetter(c)) {
-                hasSpecial = true;
-            }
+            if (!hasLowerCase) hasLowerCase = Character.isLowerCase(c);
+            if (!hasUpperCase) hasUpperCase = Character.isUpperCase(c);
+            if (!hasDigit) hasDigit = Character.isDigit(c);
+            if (!hasSpecial) hasSpecial = !Character.isLetter(c) && !Character.isDigit(c);
         }
 
         strength += hasLowerCase ? 1 : 0;

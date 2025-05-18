@@ -60,8 +60,6 @@ public class ControllerUtils {
     /**
      * Método para construir una respuesta de la API REST para un acceso denegado.
      * @param request Petición HTTP.
-     * @param controller Controlador que generó la respuesta.
-     * @param eventType Tipo de evento que generó la respuesta.
      * @return ResponseEntity<MessageResponse> Respuesta de la API REST.
      */
     public static ResponseEntity<MessageResponse> buildForbiddenResponse(HttpServletRequest request) {
