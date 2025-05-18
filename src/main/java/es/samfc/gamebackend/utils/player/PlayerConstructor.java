@@ -16,6 +16,7 @@ import es.samfc.gamebackend.services.impl.EconomiesService;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Constructor de jugadores.
@@ -53,13 +54,8 @@ public class PlayerConstructor {
      * @return boolean true si se ha construido correctamente el jugador.
      */
     public boolean buildPlayer(RegisterRequest register) {
-
-
         Optional<UUID> uuid = PlayerUUIDFetcher.getUUID(register.getUsername());
-        if (uuid.isEmpty()) {
-            String uuidString = "OfflinePlayer:" + register.getUsername();
-            uuid = Optional.of(UUID.nameUUIDFromBytes(uuidString.getBytes()));
-        }
+        if (uuid.isEmpty()) return false;
 
         //Setup Credentials
         PlayerCredentials credentials = new PlayerCredentials.Builder(uuid.get())
@@ -70,7 +66,7 @@ public class PlayerConstructor {
         credentialsRepository.save(credentials);
 
         //Setup Permissions
-        List<BackendPermissionType> defaultPermList = List.of(defaultPermissions.split(";")).stream().map(BackendPermissionType::valueOf).toList();
+        List<BackendPermissionType> defaultPermList = Stream.of(defaultPermissions.split(";")).map(BackendPermissionType::valueOf).toList();
         BackendPermissions permissions = new BackendPermissions.Builder()
                 .permissions(defaultPermList)
                 .build();
